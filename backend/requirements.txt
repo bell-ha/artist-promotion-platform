@@ -1,0 +1,14 @@
+fastapi
+uvicorn[standard]
+
+# DB
+sqlalchemy>=2.0
+asyncpg
+sqlmodel
+
+# 기타
+python-dotenv
+
+# 이미지 업로드
+cloudinary
+python-multipart
