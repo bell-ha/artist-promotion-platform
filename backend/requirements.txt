@@ -1,14 +1,18 @@
 fastapi
 uvicorn[standard]
-
-# DB
 sqlalchemy>=2.0
 asyncpg
 sqlmodel
-
-# 기타
 python-dotenv
-
-# 이미지 업로드
 cloudinary
 python-multipart
+itsdangerous
+authlib
+httpx
+pyjwt
+email-validator
+pydantic[email]
+
+passlib[bcrypt]
+bcrypt==4.0.1
+python-jose[cryptography]
