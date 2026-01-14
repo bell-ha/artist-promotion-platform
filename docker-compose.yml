@@ -14,6 +14,9 @@ services:
     volumes:
       - ./frontend:/app
       - /app/node_modules
+    environment:
+      # ✅ 로컬 개발 시 프론트엔드가 바라볼 백엔드 주소입니다.
+      - VITE_API_URL=http://localhost:8000
     ports:
       - "5173:5173"
     depends_on:

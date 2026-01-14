@@ -1,7 +1,6 @@
 import os
 from typing import AsyncGenerator
-
-from sqlmodel import SQLModel
+from sqlmodel import SQLModel  # SQLModel이 SQLAlchemy의 Base 역할을 합니다.
 from sqlalchemy.ext.asyncio import (
     AsyncSession,
     create_async_engine,
@@ -20,7 +19,6 @@ AsyncSessionLocal = sessionmaker(
     class_=AsyncSession,
     expire_on_commit=False,
 )
-
 
 async def get_session() -> AsyncGenerator[AsyncSession, None]:
     async with AsyncSessionLocal() as session:
