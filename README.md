@@ -1,231 +1,96 @@
-# 🎵 Artist Promotion Platform
+# 🎵 Artist Promotion Platform: Full-Stack Project Archive
 
-아티스트 정보를 관리하고, 이미지를 업로드하여 CDN(Cloudinary)에 저장하는 **실서비스 구조의 풀스택 프로젝트**입니다.
-Docker 기반으로 구성되어 있으며, 비동기 FastAPI + PostgreSQL + React(Vite)를 사용합니다.
-
----
-
-## 📦 Tech Stack
-
-### Backend
-
-* **Python 3.11**
-* **FastAPI**
-* **SQLAlchemy (Async)**
-* **asyncpg**
-* **PostgreSQL (Neon DB)**
-* **Cloudinary (이미지 업로드 & CDN)**
-* **Uvicorn**
-* **Docker**
-
-### Frontend
-
-* **React**
-* **Vite**
-* **Node.js 20**
-* **Axios / Fetch**
-* **Docker**
-
-### Infra / DevOps
-
-* **Docker Compose**
-* **.env 환경변수 관리**
-* **Cloudinary SaaS**
-* **Neon Serverless PostgreSQL**
+아티스트 정보를 관리하고, 이미지를 업로드하여 CDN(Cloudinary)에 저장하는 **비동기 실서비스 구조의 프로젝트**입니다. 본 가이드는 초기 설정부터 도커 연동, 발생했던 이슈 해결 과정까지 모두 기록합니다.
 
 ---
 
-## 📁 Project Structure
+## 🏗️ Updated Project Structure
+
+기존 구조에서 **SQLModel 기반의 비동기 DB 처리**와 **React-Router를 통한 페이지 라우팅**이 추가되었습니다.
 
 ```text
 artist-promotion-platform/
-├── docker-compose.yml
-├── .env
+├── docker-compose.yml       # 컨테이너 오케스트레이션 (Back/Front/DB 연결)
+├── .env                     # Neon DB, Cloudinary 보안키 관리
 │
 ├── backend/
-│   ├── Dockerfile
-│   ├── requirements.txt
+│   ├── Dockerfile           # 운영/배포용 빌드 설정
+│   ├── requirements.txt     # Python 의존성 (sqlmodel, cloudinary 등)
 │   └── app/
-│       ├── main.py
-│       ├── database.py
-│       ├── cloudinary.py
+│       ├── main.py          # CORS 설정 및 API 엔드포인트
+│       ├── database.py      # SQLModel + AsyncSession 비동기 설정
+│       ├── cloudinary.py    # 이미지 업로드 유틸리티
 │       └── models/
-│           └── artist.py
+│           ├── __init__.py  # 모델 통합 및 Base(SQLModel) 정의 (핵심 수정사항)
+│           └── user.py      # User 및 UserRole 모델 (비동기 처리 최적화)
 │
 └── frontend/
-    ├── Dockerfile.dev
-    ├── package.json
+    ├── Dockerfile.dev       # 개발용 도커 설정 (Hot-reload 지원)
+    ├── package.json         # 라이브러리 명단 (react-router-dom, axios 추가됨)
     └── src/
+        ├── main.jsx         # 스타일 및 라우터 엔트리 포인트
+        ├── App.jsx          # Route 정의 (Main ↔ LoginPage)
+        └── pages/
+            ├── Main.jsx     # 아티스트 목록 조회 및 API 통신
+            └── LoginPage.jsx # Axios 기반 로그인 처리
+
 ```
 
 ---
 
-## ⚙️ Environment Variables (.env)
+## 🛠️ 핵심 기술적 해결 기록 (Troubleshooting)
 
-```env
-# Database
-DATABASE_URL=postgresql+asyncpg://neondb_owner:비밀번호@ep-xxxx.neon.tech/neondb?sslmode=require
+### 1. Backend: SQLModel 비동기 임포트 이슈
 
-# Cloudinary
-CLOUDINARY_CLOUD_NAME=dapo5jbz4
-CLOUDINARY_API_KEY=xxxxxxxxxxxx
-CLOUDINARY_API_SECRET=xxxxxxxxxxxx
-```
+* **문제**: `ImportError: cannot import name 'Base' from 'app.database'` 발생.
+* **원인**: 기존 SQLAlchemy의 `declarative_base()` 방식과 달리, **SQLModel**은 `SQLModel` 클래스 자체가 `Base` 역할을 수행함. `database.py`에 `Base`라는 명시적 객체가 없어 발생한 에러.
+* **해결**: `models/__init__.py`에서 `Base = SQLModel`로 별칭을 지정하여 기존 코드와의 호환성을 유지하고, 비동기 엔진(`create_async_engine`)을 통해 Neon DB와 연결.
 
-> ⚠️ `.env` 파일은 **절대 Git에 커밋하지 않음**
+### 2. Frontend: 도커 환경의 라이브러리 부재 이슈
 
----
+* **문제**: `Failed to resolve import "react-router-dom"` 발생.
+* **원인**: 소스 코드에는 라이브러리를 사용하도록 적었으나, **`package.json` 명단에 누락**되어 도커 빌드 시 설치되지 않음. 도커의 볼륨 캐싱 때문에 코드만 바꾼다고 설치가 자동으로 되지 않는 특성 때문.
+* **해결**:
+1. `package.json`의 `dependencies`에 직접 라이브러리 명시.
+2. `docker-compose up --build` 명령어를 통해 **도커 레이어 캐시를 무효화**하고 새로 `npm install`을 수행하도록 강제함.
 
-## 🗄 Database Schema
 
-### artists 테이블
-
-```sql
-CREATE TABLE artists (
-  id SERIAL PRIMARY KEY,
-  name VARCHAR NOT NULL,
-  genre VARCHAR,
-  country VARCHAR,
-  image_url VARCHAR
-);
-```
 
 ---
 
-## 🧠 Backend Architecture
+## 🔗 로컬-서버 연동 메커니즘 (How it Works)
 
-### database.py
+이번 프로젝트에서 가장 중요한 부분은 **내 컴퓨터와 도커 컨테이너 간의 실시간 동기화**입니다.
 
-* Async SQLAlchemy 엔진 생성
-* 세션 Dependency 제공 (`get_session`)
+1. **개발 환경 (Development Flow)**:
+* `volumes: - ./frontend:/app` 설정을 통해 내 Mac에서 코드를 수정하면 도커 컨테이너 안으로 즉시 반영됩니다.
+* 단, 라이브러리(`node_modules`)는 컨테이너 내부 환경을 보호하기 위해 별도의 볼륨으로 격리하여 관리했습니다.
 
-### cloudinary.py
 
-* Cloudinary SDK 설정
-* 이미지 업로드 함수 제공
+2. **네트워크 통신 (Network Flow)**:
+* **Frontend → Backend**: 브라우저에서 실행되는 프론트엔드는 환경 변수 `VITE_API_URL`을 통해 도커 외부 포트(`8000`)로 백엔드 API에 요청을 보냅니다.
+* **Backend → DB**: 백엔드는 `.env`에 정의된 `DATABASE_URL`을 통해 외부 클라우드 DB(Neon)에 비동기 쿼리를 보냅니다.
+* **Backend → Cloudinary**: 사용자가 이미지를 업로드하면 백엔드가 이를 받아 Cloudinary 서버로 전송하고, 반환된 **Secure URL**만 DB에 저장합니다.
 
-### artist.py (Model)
 
-* SQLAlchemy ORM 기반 Artist 모델
-* `image_url` 컬럼 포함
-
----
-
-## 🔌 API Endpoints
-
-### GET /api/artists
-
-아티스트 목록 조회
-
-```json
-[
-  {
-    "id": 1,
-    "name": "Artist A",
-    "genre": "Rock",
-    "country": "KR",
-    "image_url": "https://res.cloudinary.com/..."
-  }
-]
-```
 
 ---
 
-### POST /api/artists/{id}/image
+## 📝 최종 API 명세 및 상태
 
-아티스트 이미지 업로드
-
-* **Request**
-
-  * `multipart/form-data`
-  * key: `file`
-
-* **Flow**
-
-  1. 파일 수신
-  2. Cloudinary 업로드
-  3. 업로드된 이미지 URL 반환
-  4. DB `artists.image_url` 업데이트
-
-* **Response**
-
-```json
-{
-  "id": 1,
-  "image_url": "https://res.cloudinary.com/..."
-}
-```
+| 기능 | 엔드포인트 | 방식 | 상태 |
+| --- | --- | --- | --- |
+| **헬스 체크** | `/` | `GET` | ✅ 정상 |
+| **아티스트 목록** | `/api/artists` | `GET` | ✅ DB 연동 완료 |
+| **이미지 업로드** | `/api/artists/{id}/image` | `POST` | ✅ Cloudinary 저장 및 URL 업데이트 완료 |
+| **CORS 허용** | `Middleware` | `ALL` | ✅ `allow_origins=["*"]` 설정 완료 |
 
 ---
 
-## 🐳 Docker Compose
+## 🚀 향후 Cloudtype 배포 전략
 
-```yaml
-version: "3.9"
+이 프로젝트를 클라우드에 올릴 때 적용해야 할 핵심 설정입니다.
 
-services:
-  backend:
-    build: ./backend
-    ports:
-      - "8000:8000"
-    env_file:
-      - .env
-    restart: unless-stopped
-
-  frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile.dev
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
-    ports:
-      - "5173:5173"
-    depends_on:
-      - backend
-    restart: unless-stopped
-```
-
----
-
-## ▶️ How to Run
-
-```bash
-docker compose down
-docker compose up --build
-```
-
-* Frontend: [http://localhost:5173](http://localhost:5173)
-* Backend: [http://localhost:8000](http://localhost:8000)
-* Swagger: [http://localhost:8000/docs](http://localhost:8000/docs)
-
----
-
-## ✅ What Is Already Implemented
-
-* [x] Async DB 연결 (Neon)
-* [x] Artist CRUD 기반 구조
-* [x] Cloudinary 이미지 업로드
-* [x] 이미지 URL DB 저장
-* [x] Docker 기반 로컬 실행
-* [x] Swagger 테스트 완료
-
----
-
-## 🚀 Next Possible Steps
-
-* [ ] 프론트엔드 이미지 업로드 UI 연결
-* [ ] 아티스트 생성 + 이미지 동시 업로드
-* [ ] Cloudinary 이미지 교체 시 이전 이미지 삭제
-* [ ] 인증 (JWT)
-* [ ] 배포 (Cloudtype / Fly.io / Railway)
-
----
-
-## 🧠 Notes for Future GPT / Developers
-
-* **backend/app** 이 Python 패키지 루트
-* `uvicorn app.main:app` 기준으로 실행
-* Async SQLAlchemy + FastAPI Dependency 패턴 사용
-* Cloudinary는 **백엔드에서만 접근**
-* 프론트엔드는 이미지 파일만 서버로 전달
+1. **환경 변수 주입**: Cloudtype 대시보드에서 `DATABASE_URL`, `CLOUDINARY_*` 변수를 입력합니다.
+2. **CORS 보안 강화**: 배포 후 생성된 프론트엔드 도메인(예: `xxx.cloudtype.app`)을 백엔드 `main.py`의 `allow_origins` 리스트에 명시하여 보안을 강화합니다.
+3. **Vite 환경 변수**: 배포용 빌드 시 `VITE_API_URL`이 실제 백엔드 배포 주소를 바라보도록 설정합니다.
