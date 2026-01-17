@@ -26,27 +26,43 @@
 
 ```text
 artist-promotion-platform/
-├── backend/                     # FastAPI 비동기 백엔드 서버
+├── backend/                        # FastAPI 비동기 백엔드 서버
 │   ├── app/
-│   │   ├── api/                 # Endpoint (Auth, Nickname 관리 등)
-│   │   ├── core/                # 보안 및 JWT 설정
-│   │   ├── models/              # SQLModel 기반 DB 테이블 정의
-│   │   ├── schemas/             # 데이터 검증용 Pydantic 모델
-│   │   ├── database.py          # 비동기 DB 엔진(AsyncEngine) 설정
-│   │   ├── cloudinary.py        # CDN 연동 유틸리티
-│   │   └── main.py              # Entry Point (CORS 및 라우터 등록)
-│   ├── Dockerfile
-│   └── requirements.txt         # 백엔드 패키지 의존성
-├── frontend/                    # React 프론트엔드
+│   │   ├── api/                    # API 엔드포인트 로직
+│   │   │   ├── __init__.py
+│   │   │   └── auth.py             # 구글 로그인 및 닉네임 설정/검증 API
+│   │   ├── core/                   # 보안 및 공통 설정
+│   │   │   └── security.py         # JWT 발급 및 비밀번호 해싱 로직
+│   │   ├── models/                 # DB 테이블 정의
+│   │   │   ├── __init__.py
+│   │   │   └── user.py             # User(id, email, nickname 등) 모델
+│   │   ├── schemas/                # Pydantic 데이터 검증 모델
+│   │   │   ├── __init__.py
+│   │   │   └── user.py             # 요청/응답용 유저 스키마
+│   │   ├── database.py             # AsyncEngine 및 비동기 세션 관리
+│   │   ├── cloudinary.py           # 이미지 업로드 및 CDN 연동 유틸
+│   │   ├── main.py                 # 앱 진입점 (CORS, 라우터 통합)
+│   │   └── __init__.py
+│   ├── Dockerfile                  # 백엔드 컨테이너 빌드 설정
+│   └── requirements.txt            # 의존성 패키지 리스트
+├── frontend/                       # React (Vite) 프론트엔드
 │   ├── src/
-│   │   ├── pages/               # Main.jsx (온보딩 및 메인 로직)
-│   │   ├── App.jsx              # 라우팅 로직
-│   │   └── main.jsx             # React Entry Point
-│   ├── Dockerfile.dev           # 개발용 도커 환경
-│   └── package.json
-├── .gitignore                   # 환경변수(.env) 및 시스템 파일 보안 관리
-├── docker-compose.yml           # 풀스택 서비스 오케스트레이션
-└── README.md
+│   │   ├── pages/                  # 페이지 컴포넌트
+│   │   │   ├── Main.jsx            # 메인 대시보드 및 닉네임 설정 모달 구현
+│   │   │   └── LoginPage.jsx       # 구글 로그인 페이지
+│   │   ├── assets/                 # 이미지 및 정적 자산
+│   │   ├── App.jsx                 # 라우팅 및 전역 상태 관리
+│   │   ├── main.jsx                # 프론트엔드 진입점
+│   │   └── index.css               # 전역 스타일시트
+│   ├── public/                     # 정적 리소스
+│   ├── index.html                  # 메인 HTML 템플릿
+│   ├── vite.config.js              # Vite 빌드 설정
+│   ├── package.json                # 프론트엔드 라이브러리 관리
+│   ├── Dockerfile.dev              # 개발용 도커 환경 설정
+│   └── .gitignore                  # 로컬 환경 설정 제외 파일 정의
+├── docker-compose.yml              # 전체 서비스 통합 실행 설정
+├── .gitignore                      # 루트 레포지토리 보안 관리 (.env 포함)
+└── README.md                       # 프로젝트 문서
 
 ```
 
