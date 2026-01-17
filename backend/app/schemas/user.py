@@ -8,7 +8,7 @@ class UserLogin(BaseModel):
     email: EmailStr
     password: str
 
-# API 응답 시 사용 (비밀번호 제외)
+# API 응답 시 사용
 class UserRead(BaseModel):
     id: int
     email: str
@@ -20,7 +20,7 @@ class UserRead(BaseModel):
     class Config:
         from_attributes = True
 
-# 토큰 응답 형식
+# 토큰 응답 형식 (구글 로그인 공용)
 class Token(BaseModel):
     access_token: str
     token_type: str
