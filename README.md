@@ -1,75 +1,91 @@
-
-# 🚀 Project Handover: Artist Promotion Platform
+# 🚀 Artist Promotion Platform (StudioSeiHa)
 
 ## 1. 프로젝트 개요
-
-아티스트 정보를 관리하고, 이미지를 Cloudinary CDN에 저장하는 **Full-stack 비동기 웹 애플리케이션**입니다. 현재 로그인 및 기본적인 DB 연동이 완료된 상태입니다.
+아티스트 정보를 관리하고 멀티미디어 콘텐츠를 제공하는 **Full-stack 비동기 웹 애플리케이션**입니다. 구글 OAuth를 활용한 간편 로그인과 신규 유저를 위한 온보딩 프로세스(닉네임 설정), 그리고 Cloudinary를 이용한 이미지 자산 관리를 핵심 기능으로 합니다.
 
 ## 2. 기술 스택 (Tech Stack)
 
-* **Backend**: Python 3.11-slim, **FastAPI**, **SQLModel** (SQLAlchemy + Pydantic), **Asyncpg** (비동기 DB 드라이버).
-* **Frontend**: React (Vite), React-Router-Dom, Axios.
-* **Database**: **Neon DB** (PostgreSQL Serverless).
-* **Infrastructure**: Docker, Docker-Compose.
-* **Storage**: Cloudinary (이미지 업로드용).
+### Backend
+* **Language**: Python 3.11
+* **Framework**: **FastAPI** (비동기 처리 최적화)
+* **Database**: **Neon DB** (Serverless PostgreSQL)
+* **ORM**: **SQLModel** (SQLAlchemy + Pydantic 통합)
+* **Auth**: Google OAuth 2.0 & JWT (JSON Web Token)
+
+### Frontend
+* **Library**: **React (Vite)**
+* **State/Auth**: Google OAuth Provider & Axios
+* **Styling**: Component-based inline styling
+
+### Infrastructure & Storage
+* **Deployment**: Cloudtype
+* **Container**: Docker, Docker-Compose
+* **CDN**: Cloudinary (Image Management)
 
 ## 3. 파일 구조 (Final Directory Structure)
 
 ```text
 artist-promotion-platform/
-├── docker-compose.yml       # Back/Front 컨테이너 오케스트레이션
-├── backend/
+├── backend/                     # FastAPI 비동기 백엔드 서버
 │   ├── app/
-│   │   ├── main.py          # CORS 및 라우터 등록 (Entry Point)
-│   │   ├── database.py      # AsyncEngine 및 get_session 설정
-│   │   ├── core/
-│   │   │   └── security.py  # JWT 생성, Bcrypt 비밀번호 검증 (Passlib)
-│   │   ├── models/          # SQLModel 기반 테이블 정의 (User 등)
-│   │   ├── schemas/         # Pydantic 기반 요청/응답 스키마
-│   │   ├── api/             # 엔드포인트 로직 (auth.py 포함)
-│   │   └── cloudinary.py    # 이미지 업로드 유틸리티
+│   │   ├── api/                 # Endpoint (Auth, Nickname 관리 등)
+│   │   ├── core/                # 보안 및 JWT 설정
+│   │   ├── models/              # SQLModel 기반 DB 테이블 정의
+│   │   ├── schemas/             # 데이터 검증용 Pydantic 모델
+│   │   ├── database.py          # 비동기 DB 엔진(AsyncEngine) 설정
+│   │   ├── cloudinary.py        # CDN 연동 유틸리티
+│   │   └── main.py              # Entry Point (CORS 및 라우터 등록)
 │   ├── Dockerfile
-│   └── requirements.txt     # bcrypt==4.0.1 고정 (호환성 이슈 해결)
-└── frontend/
-    ├── src/
-    │   ├── main.jsx         # Entry Point
-    │   ├── App.jsx          # React-Router 기반 라우팅 로직
-    │   └── pages/           # Main.jsx, LoginPage.jsx
-    ├── Dockerfile.dev       # Vite Hot-reload 환경
-    └── package.json         # react-router-dom, axios 포함
+│   └── requirements.txt         # 백엔드 패키지 의존성
+├── frontend/                    # React 프론트엔드
+│   ├── src/
+│   │   ├── pages/               # Main.jsx (온보딩 및 메인 로직)
+│   │   ├── App.jsx              # 라우팅 로직
+│   │   └── main.jsx             # React Entry Point
+│   ├── Dockerfile.dev           # 개발용 도커 환경
+│   └── package.json
+├── .gitignore                   # 환경변수(.env) 및 시스템 파일 보안 관리
+├── docker-compose.yml           # 풀스택 서비스 오케스트레이션
+└── README.md
 
 ```
 
-## 4. 주요 해결 과제 및 구현 사항 (Troubleshooting History)
+## 4. 주요 구현 사항 및 트러블슈팅 (Highlights)
 
-### ✅ 비동기 DB 엔진 최적화
+### ✅ 신규 유저 온보딩 프로세스 (Google OAuth)
 
-* `SQLModel`과 `sqlalchemy.ext.asyncio`를 결합하여 Neon DB에 비동기로 요청을 보냅니다. `models/__init__.py`를 통해 `Base` 객체 호환성 이슈를 해결했습니다.
+* **이슈**: 구글 로그인 시 DB에 계정은 생성되나 신규 유저의 닉네임 설정 단계가 누락됨.
+* **해결**: 백엔드의 `is_new_user` 플래그를 프론트엔드에서 즉시 감지하여 전용 **닉네임 설정 모달**을 강제 팝업하는 로직 구현. 중복 검사를 통과해야만 서비스 이용이 가능하도록 설계.
 
-### ✅ 로그인 및 보안 이슈 (Bcrypt Compatibility)
+### ✅ 보안 및 환경변수 관리 최적화
 
-* **이슈**: DB에 수동 입력한 해시값과 서버 컨테이너 내부의 `bcrypt` 검증 알고리즘이 충돌하여 로그인 실패(`400 Bad Request`) 발생.
-* **해결**: `auth.py`에 임시 강제 통과 및 **DB 해시 자동 갱신 로직**을 넣어 현재 환경에 맞는 해시값으로 DB 데이터를 교정했습니다. 현재는 정상적인 `verify_password` 절차를 따릅니다.
+* **이슈**: 커밋 기록에 민감 정보(`.env`)가 노출되는 보안 이슈 발생.
+* **해결**: `git filter-branch` 및 `force push`를 통해 과거 유출 기록을 완전히 세탁함. 이후 모든 비밀 정보는 인프라(Cloudtype) 환경변수로 분리하여 관리.
 
-### ✅ 도커 네트워크 및 환경 변수
+### ✅ 비동기 DB 및 인프라 연동
 
-* 백엔드는 `0.0.0.0:8000`에서 실행되며, 프론트엔드는 도커 외부 브라우저 환경에서 백엔드와 통신합니다. `.env` 파일을 통해 보안키를 관리합니다.
+* `Asyncpg` 드라이버를 사용하여 Neon DB와 비동기 세션을 유지하며 성능 최적화.
+* 로컬(localhost)과 배포 서버(Cloudtype) 환경에 따라 백엔드 URL이 자동 전환되도록 유연한 통신 환경 구축.
 
-## 5. 실행 방법 (How to Run)
+## 5. 실행 및 관리
+
+### 로컬 실행
 
 ```bash
-# 전체 컨테이너 빌드 및 실행
-docker-compose up --build
-
-# DB 세션 확인 (Neon DB SQL Editor)
-# 비밀번호 'test1234'의 해시값은 현재 DB에 정상 교정되어 있음.
+# 전체 컨테이너 빌드 및 백그라운드 실행
+docker-compose up --build -d
 
 ```
 
-## 6. 현재 상태 및 다음 기능 (Next Steps)
+### 보안 관리
 
-* **로그인**: 성공 (`200 OK`, JWT 발급 완료).
-* **다음 작업**:
-1. 발급된 JWT 토큰을 프론트엔드 `localStorage`에 저장하고 **PrivateRoute** 구현.
-2. 메인 페이지(`Main.jsx`)에서 아티스트 목록을 불러오는 API 연동.
-3. Cloudinary를 이용한 프로필 이미지 수정 기능 활성화.
+* **`.env` 관리**: 본 프로젝트의 `.env`는 `.gitignore`에 등록되어 GitHub에 업로드되지 않습니다.
+* **배포 서버 설정**: 실제 운영 환경에서는 Cloudtype 환경변수 설정을 통해 서버 비밀키를 공급받습니다.
+
+## 6. 현재 상태 및 향후 과제
+
+* **완료**: 구글 로그인 연동, 신규 유저 닉네임 강제 설정 모달, DB 비동기 CRUD.
+* **진행 예정**:
+1. JWT 토큰을 이용한 Private Route 보안 강화.
+2. 아티스트 프로필 이미지 Cloudinary 업로드 기능 세부 연동.
+3. 장르별 아티스트 필터링 고도화.
