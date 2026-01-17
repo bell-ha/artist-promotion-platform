@@ -2,8 +2,10 @@ import React, { useState, useEffect } from "react";
 import { GoogleOAuthProvider, GoogleLogin } from '@react-oauth/google';
 import axios from "axios";
 
-const BACKEND_URL = "https://port-0-artist-promotion-platform-backend-mk9v7xrma0e5b23b.sel3.cloudtype.app";
-
+const BACKEND_URL = window.location.hostname === "localhost" 
+  ? "http://localhost:8000" 
+  : "https://port-0-artist-promotion-platform-backend-mk9v7xrma0e5b23b.sel3.cloudtype.app";
+  
 function Main() {
   const [user, setUser] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
