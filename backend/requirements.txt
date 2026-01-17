@@ -1,18 +1,24 @@
+# --- 기존 내용 유지 ---
 fastapi
 uvicorn[standard]
-sqlalchemy>=2.0
-asyncpg
 sqlmodel
+asyncpg
+sqlalchemy>=2.0
 python-dotenv
-cloudinary
 python-multipart
+bcrypt==4.0.1
+passlib[bcrypt]
+python-jose[cryptography]
+pyjwt
 itsdangerous
 authlib
 httpx
-pyjwt
+google-auth
+cloudinary
 email-validator
 pydantic[email]
+starlette
 
-passlib[bcrypt]
-bcrypt==4.0.1
-python-jose[cryptography]
+# ✅ 이 줄을 추가하세요!
+requests
+fastapi-mail
