@@ -337,18 +337,39 @@ export default function Main() {
               ))}
             </nav>
 
+
+                        {/* 기존: <div className="auth"> ... </div> 내부 */}
             <div className="auth">
               {user ? (
                 <div className="auth__user">
                   <span className="nickname">
                     <strong>{user.nickname}</strong>님
                   </span>
+
+                  {/* ✅ 추가: MyPage 버튼 */}
+                  <button
+                    className="btn btn--ghost"
+                    type="button"
+                    onClick={() => navigate("/mypage")}
+                  >
+                    MyPage
+                  </button>
+
                   <button className="btn btn--ghost" onClick={handleLogout} type="button">
                     LogOut
                   </button>
                 </div>
               ) : (
                 <>
+                  {/* (선택) 로그인 안 했으면 마이페이지 버튼 누르면 로그인 모달 열리게 하고 싶다면 아래처럼 추가 가능 */}
+                  <button
+                    className="btn btn--ghost"
+                    type="button"
+                    onClick={() => openAuth("signin")}
+                  >
+                    MyPage
+                  </button>
+
                   <button className="btn btn--ghost" onClick={() => openAuth("signup")} type="button">
                     Sign Up
                   </button>
@@ -358,7 +379,7 @@ export default function Main() {
                 </>
               )}
             </div>
-          </div>
+            </div>
         </header>
 
         {/* HERO */}
