@@ -120,6 +120,7 @@ export default function Header({ user, onSignUp, onLogIn, onLogOut }: HeaderProp
                     className="w-full text-left border-none bg-transparent text-white/88 px-[10px] py-[10px] rounded-[10px] cursor-pointer text-[13px] hover:bg-white/6 hover:text-white transition-colors"
                     type="button"
                     role="menuitem"
+                    onClick={() => navigate(`/category/${encodeURIComponent(cat.label)}/${encodeURIComponent(item)}`)}
                   >
                     {item}
                   </button>
