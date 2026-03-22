@@ -1,4 +1,5 @@
 import os
+import asyncio
 from typing import AsyncGenerator
 from sqlmodel import SQLModel
 from sqlalchemy.ext.asyncio import (
@@ -11,9 +12,13 @@ from sqlalchemy.orm import sessionmaker
 DATABASE_URL = os.getenv("DATABASE_URL")
 
 # 비동기 엔진 생성
+# pool_pre_ping: 커넥션 사용 전 유효성 확인 (NeonDB 유휴 종료 대응)
+# pool_recycle:  5분마다 커넥션 강제 갱신
 engine = create_async_engine(
     DATABASE_URL,
-    echo=True,  # 실행되는 SQL문을 로그로 보여줍니다 (개발 시 유용)
+    echo=True,
+    pool_pre_ping=True,
+    pool_recycle=300,
 )
 
 # 세션 생성기 설정
@@ -35,9 +40,19 @@ async def init_db():
         await conn.run_sync(SQLModel.metadata.create_all)
 
 # 의존성 주입을 위한 세션 제공 함수
+# NeonDB가 커넥션을 끊은 경우 최대 3회 재시도 (0.5s → 1s 딜레이)
 async def get_session() -> AsyncGenerator[AsyncSession, None]:
-    async with AsyncSessionLocal() as session:
-        yield session
+    last_exc = None
+    for attempt in range(3):
+        try:
+            async with AsyncSessionLocal() as session:
+                yield session
+                return
+        except Exception as e:
+            last_exc = e
+            if attempt < 2:
+                await asyncio.sleep(0.5 * (attempt + 1))
+    raise last_exc
 
 
 # 카테고리 초기 데이터 삽입 (이미 존재하면 스킵)
