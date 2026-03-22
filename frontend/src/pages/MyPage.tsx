@@ -72,10 +72,10 @@ export default function MyPage() {
             </div>
           </div>
           <div className="actions">
-            <button className="btn btn--primary" type="button" onClick={() => alert("프로필 편집 기능은 추후 연결!")}>
+            <button className="btn btn--primary" type="button" onClick={() => navigate("/mypage/edit")}>
               Edit profile
             </button>
-            <button className="btn btn--ghost" type="button" onClick={() => alert("내 포트폴리오 기능은 추후 연결!")}>
+            <button className="btn btn--ghost" type="button" onClick={() => navigate("/mypage/profile")}>
               My portfolio
             </button>
           </div>

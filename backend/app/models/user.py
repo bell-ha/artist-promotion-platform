@@ -41,3 +41,6 @@ class User(SQLModel, table=True):
         sa_column=Column(DateTime(timezone=True), server_default=func.now())
     )
     is_active: bool = Field(default=True)
+
+    # 선택된 템플릿 번호 (1, 2, 3)
+    active_template: int = Field(default=1)

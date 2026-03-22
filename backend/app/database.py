@@ -29,6 +29,7 @@ async def init_db():
         # 이 시점에 모델들이 SQLModel.metadata에 등록되어 있어야 합니다.
         # 따라서 아래처럼 모델을 임포트해줍니다.
         from app.models.user import User
+        from app.models.category import CareerCategory, CareerItem, UserJob
         
         # 테이블 생성 (이미 존재하면 건너뜁니다)
         await conn.run_sync(SQLModel.metadata.create_all)
@@ -37,3 +38,38 @@ async def init_db():
 async def get_session() -> AsyncGenerator[AsyncSession, None]:
     async with AsyncSessionLocal() as session:
         yield session
+
+
+# 카테고리 초기 데이터 삽입 (이미 존재하면 스킵)
+async def seed_categories():
+    from sqlalchemy.future import select
+    from app.models.category import CareerCategory, CareerItem
+
+    CATEGORIES = [
+        {"name": "PERFORMER",         "order": 1, "items": ["보컬", "인디 싱어송라이터", "뮤지컬배우"]},
+        {"name": "INSTRUMENTALIST",   "order": 2, "items": ["기타리스트", "피아니스트", "드러머", "베이시스트", "오케스트라 연주자", "세션 연주자"]},
+        {"name": "CREATOR",           "order": 3, "items": ["대중음악 작곡가", "영화음악 작곡가", "게임음악 작곡가", "광고음악 작곡가", "비트메이커", "탑라이너"]},
+        {"name": "SOUND DESIGNER",    "order": 4, "items": ["사운드 디자이너", "폴리 아티스트", "인터랙티브 오디오 디자이너"]},
+        {"name": "AUDIO ENGINEER",    "order": 5, "items": ["레코딩 엔지니어", "믹싱/마스터링 엔지니어", "라이브 PA 엔지니어", "방송 음향 감독"]},
+        {"name": "AUDIO PROGRAMMER",  "order": 6, "items": ["프론트엔드 개발자", "백엔드 개발자"]},
+        {"name": "VISUAL ARTIST",     "order": 7, "items": ["미디어아트 작가", "미술 작가", "설치미술가", "공연 테크니컬 디렉터"]},
+    ]
+
+    async with AsyncSessionLocal() as session:
+        for cat_data in CATEGORIES:
+            result = await session.execute(select(CareerCategory).where(CareerCategory.name == cat_data["name"]))
+            category = result.scalars().first()
+
+            if not category:
+                category = CareerCategory(name=cat_data["name"], order=cat_data["order"])
+                session.add(category)
+                await session.flush()
+
+            for i, item_name in enumerate(cat_data["items"]):
+                result = await session.execute(
+                    select(CareerItem).where(CareerItem.category_id == category.id, CareerItem.name == item_name)
+                )
+                if not result.scalars().first():
+                    session.add(CareerItem(category_id=category.id, name=item_name, order=i + 1))
+
+        await session.commit()

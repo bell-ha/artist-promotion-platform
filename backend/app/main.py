@@ -3,13 +3,15 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.sessions import SessionMiddleware
 
-from app.database import init_db
-from app.api import auth  # auth 라우터 임포트
+from app.database import init_db, seed_categories
+from app.api import auth
+from app.api import profile
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # 서버 시작 시 테이블 생성
+    # 서버 시작 시 테이블 생성 + 카테고리 초기 데이터 삽입
     await init_db()
+    await seed_categories()
     yield
 
 app = FastAPI(
@@ -29,6 +31,7 @@ app.add_middleware(
 
 # ✅ 라우터 등록
 app.include_router(auth.router)
+app.include_router(profile.router)
 
 @app.get("/")
 async def root():

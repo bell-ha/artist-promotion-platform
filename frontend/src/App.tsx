@@ -2,6 +2,8 @@ import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from "r
 import { useEffect } from "react";
 import Main from "./pages/Main";
 import MyPage from "./pages/MyPage";
+import EditProfile from "./pages/EditProfile";
+import Profile from "./pages/Profile";
 import CategoryList from "./pages/CategoryList";
 
 function ScrollToTop() {
@@ -24,6 +26,8 @@ export default function App() {
 
         {/* 마이페이지 */}
         <Route path="/mypage" element={<MyPage />} />
+        <Route path="/mypage/edit" element={<EditProfile />} />
+        <Route path="/mypage/profile" element={<Profile />} />
 
         {/* 카테고리 목록 (mock) */}
         <Route path="/category/:category/:item" element={<CategoryList />} />

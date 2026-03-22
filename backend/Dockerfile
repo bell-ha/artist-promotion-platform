@@ -18,8 +18,9 @@ RUN apt-get update && apt-get install -y \
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# 6. app 폴더만 복사 (핵심)
+# 6. 소스 복사
 COPY app /app/app
+COPY scripts /app/scripts
 
 # 7. 포트
 EXPOSE 8000
