@@ -160,6 +160,7 @@ async def save_name_section(
     ns.english_name = data.english_name
     ns.description1 = data.description1
     ns.description2 = data.description2
+    ns.thumbnail_url = data.thumbnail_url
 
     await session.execute(delete(NameSectionJob).where(NameSectionJob.name_section_id == ns.id))
     for item_id in data.career_item_ids:

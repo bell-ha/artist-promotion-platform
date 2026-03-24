@@ -39,6 +39,17 @@ async def init_db():
         # 테이블 생성 (이미 존재하면 건너뜁니다)
         await conn.run_sync(SQLModel.metadata.create_all)
 
+        # 기존 테이블에 새 컬럼 추가 (이미 있으면 스킵)
+        for table in [
+            "t1_youtube_cards", "t1_soundcloud_cards",
+            "t1_image_cards", "t1_no_image_cards",
+        ]:
+            await conn.execute(
+                __import__("sqlalchemy").text(
+                    f"ALTER TABLE {table} ADD COLUMN IF NOT EXISTS project_subtitle VARCHAR"
+                )
+            )
+
 # 의존성 주입을 위한 세션 제공 함수
 # NeonDB가 커넥션을 끊은 경우 최대 3회 재시도 (0.5s → 1s 딜레이)
 async def get_session() -> AsyncGenerator[AsyncSession, None]:

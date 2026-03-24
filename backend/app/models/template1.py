@@ -59,6 +59,7 @@ class YoutubeCard(SQLModel, table=True):
 
     link: Optional[str] = Field(default=None)
     project_title: Optional[str] = Field(default=None)
+    project_subtitle: Optional[str] = Field(default=None)
     album_name: Optional[str] = Field(default=None)
     composer: Optional[str] = Field(default=None)
     category_desc: Optional[str] = Field(default=None)
@@ -77,6 +78,7 @@ class SoundcloudCard(SQLModel, table=True):
 
     link: Optional[str] = Field(default=None)
     project_title: Optional[str] = Field(default=None)
+    project_subtitle: Optional[str] = Field(default=None)
     album_name: Optional[str] = Field(default=None)
     composer: Optional[str] = Field(default=None)
     category_desc: Optional[str] = Field(default=None)
@@ -96,6 +98,7 @@ class ImageCard(SQLModel, table=True):
     hyperlink: Optional[str] = Field(default=None)
     image_url: Optional[str] = Field(default=None)
     project_title: Optional[str] = Field(default=None)
+    project_subtitle: Optional[str] = Field(default=None)
     album_name: Optional[str] = Field(default=None)
     composer: Optional[str] = Field(default=None)
     category_desc: Optional[str] = Field(default=None)
@@ -114,6 +117,7 @@ class NoImageCard(SQLModel, table=True):
 
     mp3_url: Optional[str] = Field(default=None)
     project_title: Optional[str] = Field(default=None)
+    project_subtitle: Optional[str] = Field(default=None)
     album_name: Optional[str] = Field(default=None)
     composer: Optional[str] = Field(default=None)
     category_desc: Optional[str] = Field(default=None)

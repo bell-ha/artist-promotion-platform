@@ -8,6 +8,7 @@ class NameSectionSave(BaseModel):
     english_name: Optional[str] = None
     description1: Optional[str] = None
     description2: Optional[str] = None
+    thumbnail_url: Optional[str] = None
     career_item_ids: List[int] = []
 
 
@@ -15,6 +16,7 @@ class NameSectionSave(BaseModel):
 class YoutubeCardData(BaseModel):
     link: Optional[str] = None
     project_title: Optional[str] = None
+    project_subtitle: Optional[str] = None
     album_name: Optional[str] = None
     composer: Optional[str] = None
     category_desc: Optional[str] = None
@@ -26,6 +28,7 @@ class YoutubeCardData(BaseModel):
 class SoundcloudCardData(BaseModel):
     link: Optional[str] = None
     project_title: Optional[str] = None
+    project_subtitle: Optional[str] = None
     album_name: Optional[str] = None
     composer: Optional[str] = None
     category_desc: Optional[str] = None
@@ -38,6 +41,7 @@ class ImageCardData(BaseModel):
     hyperlink: Optional[str] = None
     image_url: Optional[str] = None
     project_title: Optional[str] = None
+    project_subtitle: Optional[str] = None
     album_name: Optional[str] = None
     composer: Optional[str] = None
     category_desc: Optional[str] = None
@@ -49,6 +53,7 @@ class ImageCardData(BaseModel):
 class NoImageCardData(BaseModel):
     mp3_url: Optional[str] = None
     project_title: Optional[str] = None
+    project_subtitle: Optional[str] = None
     album_name: Optional[str] = None
     composer: Optional[str] = None
     category_desc: Optional[str] = None
