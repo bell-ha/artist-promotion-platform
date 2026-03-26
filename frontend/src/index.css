@@ -27,3 +27,16 @@ body {
   color: #f2f2f2;
   font-family: "Pretendard", "Noto Sans KR", "Inter", system-ui, -apple-system, sans-serif;
 }
+
+@keyframes floatNewUp {
+  from {
+    transform: translateY(0px);
+  }
+  to {
+    transform: translateY(-18px);
+  }
+}
+
+.new-float-trigger {
+  animation: floatNewUp 1.2s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}

@@ -105,24 +105,6 @@ export default function CTASection({ variant = "large" }: { variant?: "large" | 
 
         {/* 액션 영역 */}
         <div className="flex items-center gap-4 mt-[200px] flex-wrap justify-center">
-          <button
-            className="bg-white text-[#2b2a2a] cursor-pointer font-medium flex items-center justify-center"
-            style={{
-              fontFamily: "'Noto Sans KR', sans-serif",
-              fontSize: 24,
-              width: 163,
-              height: 50,
-              borderRadius: 19,
-              border: "none",
-              boxShadow: "0 4px 16px rgba(0,0,0,.3)",
-            }}
-            type="button"
-          >
-            Browse
-          </button>
-
-          <span className="text-white font-black text-xl">OR</span>
-
           <label
             className="flex items-center cursor-text"
             style={{
