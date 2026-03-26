@@ -128,6 +128,35 @@ class NoImageCard(SQLModel, table=True):
 
 
 # ──────────────────────────────────────────────
+# CONTACT SECTION
+# ──────────────────────────────────────────────
+
+class ContactSection(SQLModel, table=True):
+    """Template 1 - Contact Section (유저당 하나)"""
+    __tablename__ = "t1_contact_sections"
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    user_id: int = Field(foreign_key="users.id", unique=True, nullable=False)
+
+    # 전화번호 (최대 2개, 선택)
+    phone1: Optional[str] = Field(default=None)
+    phone2: Optional[str] = Field(default=None)
+
+    # 이메일 (최대 3개, email1 필수)
+    email1: Optional[str] = Field(default=None)
+    email2: Optional[str] = Field(default=None)
+    email3: Optional[str] = Field(default=None)
+
+    # SNS (사용자가 URL 직접 입력)
+    instagram_url: Optional[str] = Field(default=None)
+    tiktok_url: Optional[str] = Field(default=None)
+    youtube_url: Optional[str] = Field(default=None)
+
+    # 추가 설명
+    extra_description: Optional[str] = Field(default=None)
+
+
+# ──────────────────────────────────────────────
 # TEXT SECTION
 # ──────────────────────────────────────────────
 

@@ -10,9 +10,10 @@ from app.models.category import CareerCategory, CareerItem
 from app.models.template1 import (
     NameSection, NameSectionJob,
     AlbumSection, YoutubeCard, SoundcloudCard, ImageCard, NoImageCard,
+    ContactSection,
     TextSection, TextCard, TextCardBodyItem,
 )
-from app.schemas.template1 import NameSectionSave, AlbumSectionSave, TextSectionsSave
+from app.schemas.template1 import NameSectionSave, AlbumSectionSave, TextSectionsSave, ContactSectionSave
 from app.core.deps import get_current_user
 
 router = APIRouter(prefix="/profile", tags=["Profile"])
@@ -132,10 +133,27 @@ async def get_profile(
             "cards": cards_data,
         })
 
+    # Contact Section
+    cs = (await session.execute(
+        select(ContactSection).where(ContactSection.user_id == current_user.id)
+    )).scalar_one_or_none()
+
+    contact_section = None
+    if cs:
+        contact_section = {
+            "phone1": cs.phone1, "phone2": cs.phone2,
+            "email1": cs.email1, "email2": cs.email2, "email3": cs.email3,
+            "instagram_url": cs.instagram_url,
+            "tiktok_url": cs.tiktok_url,
+            "youtube_url": cs.youtube_url,
+            "extra_description": cs.extra_description,
+        }
+
     return {
         "active_template": current_user.active_template,
         "name_section": name_section,
         "album_section": album_section,
+        "contact_section": contact_section,
         "text_sections": text_sections,
     }
 
@@ -254,6 +272,35 @@ async def save_text_sections(
                     content=body_data.content,
                     order=k,
                 ))
+
+    await session.commit()
+    return {"status": "ok"}
+
+
+# ── Contact Section 저장 ──────────────────────
+@router.put("/contact-section")
+async def save_contact_section(
+    data: ContactSectionSave,
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    cs = (await session.execute(
+        select(ContactSection).where(ContactSection.user_id == current_user.id)
+    )).scalar_one_or_none()
+
+    if not cs:
+        cs = ContactSection(user_id=current_user.id)
+        session.add(cs)
+
+    cs.phone1 = data.phone1
+    cs.phone2 = data.phone2
+    cs.email1 = data.email1
+    cs.email2 = data.email2
+    cs.email3 = data.email3
+    cs.instagram_url = data.instagram_url
+    cs.tiktok_url = data.tiktok_url
+    cs.youtube_url = data.youtube_url
+    cs.extra_description = data.extra_description
 
     await session.commit()
     return {"status": "ok"}

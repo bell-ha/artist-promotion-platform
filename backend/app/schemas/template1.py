@@ -92,3 +92,16 @@ class TextSectionData(BaseModel):
 
 class TextSectionsSave(BaseModel):
     sections: List[TextSectionData] = []
+
+
+# ── Contact Section ────────────────────────────
+class ContactSectionSave(BaseModel):
+    phone1: Optional[str] = None
+    phone2: Optional[str] = None
+    email1: Optional[str] = None   # 필수 (프론트에서 검증)
+    email2: Optional[str] = None
+    email3: Optional[str] = None
+    instagram_url: Optional[str] = None
+    tiktok_url: Optional[str] = None
+    youtube_url: Optional[str] = None
+    extra_description: Optional[str] = None

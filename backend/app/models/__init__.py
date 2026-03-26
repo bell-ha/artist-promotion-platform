@@ -5,6 +5,7 @@ from .category import CareerCategory, CareerItem, UserJob
 from .template1 import (
     NameSection, NameSectionJob,
     AlbumSection, YoutubeCard, SoundcloudCard, ImageCard, NoImageCard,
+    ContactSection,
     TextSection, TextCard, TextCardBodyItem,
 )
 
