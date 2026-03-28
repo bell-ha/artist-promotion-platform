@@ -200,6 +200,7 @@ export default function DiscoverSounds() {
           position: "relative",
           zIndex: 10,
           cursor: "grab",
+          overflow: "hidden",
         }}
       >
         <div
