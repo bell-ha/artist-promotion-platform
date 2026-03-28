@@ -2,43 +2,38 @@ import { ASSETS } from "../lib/assets";
 
 export default function SpotlightAlbum() {
   return (
-    <section
-      className=""
-      style={{
-        background: "linear-gradient(180deg, rgba(0,0,0,.92), rgba(38,0,24,.88))",
-      }}
-    >
+    <section className="bg-spotlight-gradient">
       <div className="w-full flex justify-center">
-        <div className="w-full pt-[58px] pb-[68px] text-center bg-[#1d0614]" >
+        <div className="w-full pt-[58px] max-md:pt-[40px] pb-[68px] max-md:pb-[48px] text-center bg-spotlight-card">
           {/* 제목 */}
-          <div
-            className="text-white font-noto"
-            style={{ fontSize: 38, letterSpacing: "1.92px" }}
-          >
-            <span style={{ fontWeight: 900, textShadow: "0 0px 30px rgba(255,255,255,0.4)" }}>Spotlight </span>
-            <span style={{ fontWeight: 500, textShadow: "0 0px 30px rgba(255,255,255,0.4)" }}>Album</span>
+          <div className="text-white font-noto text-[38px] max-md:text-[24px] tracking-[1.92px]">
+            <span
+              className="font-black"
+              style={{ textShadow: "0 0px 30px rgba(255,255,255,0.4)" }}
+            >
+              Spotlight{" "}
+            </span>
+            <span
+              className="font-medium"
+              style={{ textShadow: "0 0px 30px rgba(255,255,255,0.4)" }}
+            >
+              Album
+            </span>
           </div>
 
           {/* 서브타이틀 */}
           <p
-            className="mt-2 font-normal font-noto"
-            style={{
-              fontSize: 24,
-              color: "#bec4d9",
-              textShadow: "0 0px 30px rgba(255,255,255,0.4)",
-            }}
+            className="mt-2 font-normal font-noto text-[24px] max-md:text-[16px] text-spotlight-sub"
+            style={{ textShadow: "0 0px 30px rgba(255,255,255,0.4)" }}
           >
             이번 달 가장 주목할 사운드 컬렉션
           </p>
 
           {/* 앨범 이미지 */}
-          <div className="flex justify-center mt-[72px]">
+          <div className="flex justify-center mt-[72px] max-md:mt-[32px] max-md:px-4">
             <div
-              className="overflow-hidden w-[737px] h-[428px]"
+              className="overflow-hidden w-[737px] max-md:w-full h-[428px] max-md:h-auto max-md:aspect-video rounded-[30px] border border-white/15"
               style={{
-                aspectRatio: "2 / 1",
-                borderRadius: 30,
-                border: "1px solid rgba(255,255,255,0.15)",
                 boxShadow: "0 20px 24.9px -9px rgba(255, 255, 255, 0.21)",
               }}
             >
@@ -51,24 +46,17 @@ export default function SpotlightAlbum() {
           </div>
 
           {/* 장식 선 */}
-          <div
-            className="my-[40px] mx-auto"
-            style={{
-              height: 3,
-              width: 235,
-              background: "#CCCCCC",
-            }}
-          />
+          <div className="my-[40px] max-md:my-[24px] mx-auto h-[3px] w-[235px] max-md:w-[120px] bg-[#CCC]" />
 
           {/* 앨범 메타 */}
-          <div className="flex flex-col items-center font-noto text-[20px]">
-            <div className="text-white font-bold" >
+          <div className="flex flex-col items-center font-noto text-[20px] max-md:text-[16px]">
+            <div className="text-white font-bold">
               Album / Portfolio Title
             </div>
-            <div style={{ color: "rgba(255,255,255,0.7)", fontWeight: 500 }}>
+            <div className="font-medium" style={{ color: "rgba(255,255,255,0.7)" }}>
               Artist Name
             </div>
-            <div style={{ color: "rgba(255,255,255,0.55)", fontWeight: 400 }}>
+            <div className="font-normal" style={{ color: "rgba(255,255,255,0.55)" }}>
               Genre
             </div>
           </div>

@@ -51,24 +51,24 @@ export default function CategoryList() {
         onLogOut={() => { localStorage.clear(); window.location.reload(); }}
       />
 
-      <main className="bg-black min-h-screen" style={{ paddingTop: 128 }}>
+      <main className="bg-black min-h-screen pt-[128px] max-md:pt-[60px]">
         {/* 히어로 */}
-        <div className="relative w-full overflow-hidden" style={{ height: 823 }}>
+        <div className="relative w-full overflow-hidden h-[823px] max-md:h-[360px]">
           <img
             src={ASSETS.heroBg1}
             alt=""
             className="absolute inset-0 w-full h-full object-cover"
           />
-          <div className="absolute inset-0" style={{ background: "linear-gradient(to bottom, rgba(0,0,0,0.18) 0%, rgba(0,0,0,0.55) 100%)" }} />
-          <div className="absolute bottom-0 left-0 right-0 px-[48px] pb-[48px] flex items-end justify-between">
+          <div className="absolute inset-0 bg-category-hero-gradient" />
+          <div className="absolute bottom-0 left-0 right-0 px-[48px] max-md:px-4 pb-[48px] max-md:pb-6 flex items-end justify-between max-md:flex-col max-md:items-start max-md:gap-3">
             <div>
-              <h1 className="text-white font-bold text-[40px] leading-tight tracking-[-1.2px] mb-[8px]">Artist</h1>
-              <p className="text-white/70 text-[20px] font-normal">Album Name</p>
+              <h1 className="text-white font-bold text-[40px] max-md:text-[24px] leading-tight tracking-[-1.2px] mb-[8px] max-md:mb-[4px]">Artist</h1>
+              <p className="text-white/70 text-[20px] max-md:text-[14px] font-normal">Album Name</p>
             </div>
             <button
               type="button"
-              className="inline-flex items-center justify-center font-bold font-noto text-[18px] px-[20px] py-[18px] cursor-pointer tracking-[-1.12px] leading-[120.492%] transition-colors duration-200"
-              style={{ color: "#392626", borderRadius: "27px", background: "#FFF", boxShadow: "0 4px 4px 0 rgba(0,0,0,0.23)" }}
+              className="inline-flex items-center justify-center font-bold font-noto text-[18px] max-md:text-[14px] px-[20px] max-md:px-3 py-[18px] max-md:py-3 cursor-pointer tracking-[-1.12px] leading-[120.492%] transition-colors duration-200 rounded-[27px] bg-white text-[#392626]"
+              style={{ boxShadow: "0 4px 4px 0 rgba(0,0,0,0.23)" }}
               onMouseEnter={e => (e.currentTarget.style.background = "rgba(255,255,255,0.85)")}
               onMouseLeave={e => (e.currentTarget.style.background = "#FFF")}
             >
@@ -78,17 +78,17 @@ export default function CategoryList() {
         </div>
 
         {/* 섹션 타이틀 */}
-        <div className="px-[40px] py-[28px]">
-          <h2 className="text-white font-bold text-[22px] tracking-tight inline-block border-b border-white pb-[6px]">
+        <div className="px-[40px] max-md:px-4 py-[28px] max-md:py-[20px]">
+          <h2 className="text-white font-bold text-[22px] max-md:text-[18px] tracking-tight inline-block border-b border-white pb-[6px]">
             {decodedItem}
             {decodedItem !== decodedCategory && (
-              <span className="text-white/40 font-normal text-[15px] ml-[12px]">{decodedCategory}</span>
+              <span className="text-white/40 font-normal text-[15px] max-md:text-[13px] ml-[12px]">{decodedCategory}</span>
             )}
           </h2>
         </div>
 
         {/* 카드 그리드 */}
-        <div className="px-[40px] grid grid-cols-4 gap-[16px]">
+        <div className="px-[40px] max-md:px-4 grid grid-cols-4 max-md:grid-cols-2 gap-[16px] max-md:gap-[10px]">
           {visible.map((card) => (
             <div key={card.id} className="relative aspect-square rounded-[8px] overflow-hidden cursor-pointer group">
               <img
@@ -97,11 +97,8 @@ export default function CategoryList() {
                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
               />
               {/* 레이블 overlay */}
-              <div
-                className="absolute bottom-0 left-0 right-0 px-[12px] py-[10px]"
-                style={{ background: "linear-gradient(to top, rgba(0,0,0,0.72) 0%, transparent 100%)" }}
-              >
-                <p className="text-white text-[13px] font-medium leading-tight">
+              <div className="absolute bottom-0 left-0 right-0 px-[12px] py-[10px] bg-card-label-gradient">
+                <p className="text-white text-[13px] max-md:text-[11px] font-medium leading-tight">
                   {card.artist} . {card.album}
                 </p>
               </div>
@@ -111,7 +108,7 @@ export default function CategoryList() {
 
         {/* 더보기 */}
         {hasMore && (
-          <div className="flex justify-center py-[48px]">
+          <div className="flex justify-center py-[48px] max-md:py-[32px]">
             <button
               type="button"
               className="border border-white/40 text-white text-[14px] px-[36px] py-[12px] rounded-full hover:bg-white/8 transition-colors"
@@ -121,7 +118,7 @@ export default function CategoryList() {
             </button>
           </div>
         )}
-        {!hasMore && <div className="py-[48px]" />}
+        {!hasMore && <div className="py-[48px] max-md:py-[32px]" />}
 
         <CTASection variant="small" />
       </main>

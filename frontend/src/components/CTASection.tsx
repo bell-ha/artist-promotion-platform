@@ -3,7 +3,7 @@ import { ASSETS } from "../lib/assets";
 export default function CTASection({ variant = "large" }: { variant?: "large" | "small" }) {
   if (variant === "small") {
     return (
-      <section className="bg-black flex items-center justify-between px-[110px] py-[80px]">
+      <section className="bg-black flex items-center justify-between max-md:flex-col max-md:items-center px-[110px] max-md:px-5 py-[80px] max-md:py-[48px] max-md:gap-6">
         {/* 로고 */}
         <div>
           <img
@@ -22,15 +22,7 @@ export default function CTASection({ variant = "large" }: { variant?: "large" | 
 
         {/* 검색창 */}
         <label
-          className="flex items-center cursor-text"
-          style={{
-            border: "1px solid #f5f5f5",
-            borderRadius: 19,
-            width: 319,
-            height: 43,
-            padding: "0 16px",
-            gap: 10,
-          }}
+          className="flex items-center cursor-text w-[319px] max-md:w-full max-md:max-w-[319px] h-[43px] rounded-[19px] border border-[#f5f5f5] px-[16px] gap-[10px]"
         >
           <img
             src={ASSETS.iconSearch}
@@ -73,16 +65,13 @@ export default function CTASection({ variant = "large" }: { variant?: "large" | 
         className="absolute inset-0 w-full h-full object-cover"
       />
       {/* 어두운 오버레이 */}
-      <div className="absolute inset-0" style={{ background: "linear-gradient(180deg, #1E1B1B 0%, #1D0B0B 45%, #000000 100%)" }} />
+      <div className="absolute inset-0 bg-cta-gradient" />
 
       {/* 콘텐츠 */}
-      <div className="relative z-10 flex flex-col items-center justify-center min-h-[400px] text-center">
+      <div className="relative z-10 flex flex-col items-center justify-center min-h-[400px] text-center px-6">
         <h3
-          className="mt-[291px] text-[#f2f2f2] font-bold font-noto"
+          className="mt-[291px] max-md:mt-[80px] text-cta-text font-bold font-noto text-[51px] max-md:text-[28px] tracking-[3.2px] max-md:tracking-[1px] leading-[1.18]"
           style={{
-            fontSize: 51,
-            letterSpacing: "3.2px",
-            lineHeight: 1.18,
             textShadow: "0 5px 4px rgba(255,255,255,0.58), -1px -1px 0 rgba(0,0,0,0.2), 1px -1px 0 rgba(0,0,0,0.2), -1px 1px 0 rgba(0,0,0,0.2), 1px 1px 0 rgba(0,0,0,0.2)",
           }}
         >
@@ -92,29 +81,16 @@ export default function CTASection({ variant = "large" }: { variant?: "large" | 
         </h3>
 
         <p
-          className="mt-[59px] font-medium font-noto"
-          style={{
-            fontSize: 19,
-            color: "rgba(206,205,205,0.55)",
-            lineHeight: 1.45,
-            letterSpacing: "-0.12px",
-          }}
+          className="mt-[59px] max-md:mt-[24px] font-medium font-noto text-[19px] max-md:text-[14px] leading-[1.45] tracking-[-0.12px]"
+          style={{ color: "rgba(206,205,205,0.55)" }}
         >
           다양한 장르의 음악 포트폴리오를 한 화면에서 탐색해보세요.
         </p>
 
         {/* 액션 영역 */}
-        <div className="flex items-center gap-4 mt-[160px] flex-wrap justify-center">
+        <div className="flex items-center gap-4 mt-[160px] max-md:mt-[48px] flex-wrap justify-center w-full max-w-[400px] max-md:max-w-full max-md:px-0">
           <label
-            className="flex items-center cursor-text"
-            style={{
-              border: "1px solid #f5f5f5",
-              borderRadius: 19,
-              width: 319,
-              height: 43,
-              padding: "0 16px",
-              gap: 10,
-            }}
+            className="flex items-center cursor-text w-[319px] max-md:w-full h-[43px] rounded-[19px] border border-[#f5f5f5] px-[16px] gap-[10px]"
           >
             <img
               src={ASSETS.iconSearch}
@@ -134,9 +110,7 @@ export default function CTASection({ variant = "large" }: { variant?: "large" | 
       </div>
 
       {/* 푸터 바 */}
-      <footer
-        className="relative z-10 flex justify-between items-center px-[110px] py-[80px]"
-      >
+      <footer className="relative z-10 flex justify-between items-center max-md:flex-col max-md:items-center px-[110px] max-md:px-5 py-[80px] max-md:py-[48px] max-md:gap-6">
         {/* 좌: 로고 */}
         <div>
           <img

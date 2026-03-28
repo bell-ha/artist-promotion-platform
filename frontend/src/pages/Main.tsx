@@ -43,8 +43,8 @@ export default function Main() {
         onLogOut={() => { localStorage.clear(); window.location.reload(); }}
       />
 
-      {/* 헤더 높이 128px 만큼 여백 */}
-      <main style={{ paddingTop: 128 }}>
+      {/* 헤더 높이 128px(데스크탑) / 60px(모바일) 만큼 여백 */}
+      <main className="pt-[128px] max-md:pt-[60px]">
         <HeroSection />
         <DiscoverSounds />
         <SpotlightAlbum />
