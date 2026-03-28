@@ -9,11 +9,11 @@ export default function SpotlightAlbum() {
       }}
     >
       <div className="w-full flex justify-center">
-        <div className="w-full pt-[72px] pb-[85px] text-center bg-[#1d0614]" >
+        <div className="w-full pt-[58px] pb-[68px] text-center bg-[#1d0614]" >
           {/* 제목 */}
           <div
             className="text-white font-noto"
-            style={{ fontSize: 48, letterSpacing: "1.92px" }}
+            style={{ fontSize: 38, letterSpacing: "1.92px" }}
           >
             <span style={{ fontWeight: 900, textShadow: "0 0px 30px rgba(255,255,255,0.4)" }}>Spotlight </span>
             <span style={{ fontWeight: 500, textShadow: "0 0px 30px rgba(255,255,255,0.4)" }}>Album</span>
@@ -23,7 +23,7 @@ export default function SpotlightAlbum() {
           <p
             className="mt-2 font-normal font-noto"
             style={{
-              fontSize: 30,
+              fontSize: 24,
               color: "#bec4d9",
               textShadow: "0 0px 30px rgba(255,255,255,0.4)",
             }}
@@ -32,9 +32,9 @@ export default function SpotlightAlbum() {
           </p>
 
           {/* 앨범 이미지 */}
-          <div className="flex justify-center mt-[90px]">
+          <div className="flex justify-center mt-[72px]">
             <div
-              className="overflow-hidden w-[1151px] h-[668px]"
+              className="overflow-hidden w-[737px] h-[428px]"
               style={{
                 aspectRatio: "2 / 1",
                 borderRadius: 30,

@@ -76,11 +76,11 @@ export default function CTASection({ variant = "large" }: { variant?: "large" | 
       <div className="absolute inset-0" style={{ background: "linear-gradient(180deg, #1E1B1B 0%, #1D0B0B 45%, #000000 100%)" }} />
 
       {/* 콘텐츠 */}
-      <div className="relative z-10 flex flex-col items-center justify-center min-h-[500px] text-center">
+      <div className="relative z-10 flex flex-col items-center justify-center min-h-[400px] text-center">
         <h3
-          className="mt-[364px] text-[#f2f2f2] font-bold font-noto"
+          className="mt-[291px] text-[#f2f2f2] font-bold font-noto"
           style={{
-            fontSize: 64,
+            fontSize: 51,
             letterSpacing: "3.2px",
             lineHeight: 1.18,
             textShadow: "0 5px 4px rgba(255,255,255,0.58), -1px -1px 0 rgba(0,0,0,0.2), 1px -1px 0 rgba(0,0,0,0.2), -1px 1px 0 rgba(0,0,0,0.2), 1px 1px 0 rgba(0,0,0,0.2)",
@@ -92,9 +92,9 @@ export default function CTASection({ variant = "large" }: { variant?: "large" | 
         </h3>
 
         <p
-          className="mt-[74px] font-medium font-noto"
+          className="mt-[59px] font-medium font-noto"
           style={{
-            fontSize: 24,
+            fontSize: 19,
             color: "rgba(206,205,205,0.55)",
             lineHeight: 1.45,
             letterSpacing: "-0.12px",
@@ -104,7 +104,7 @@ export default function CTASection({ variant = "large" }: { variant?: "large" | 
         </p>
 
         {/* 액션 영역 */}
-        <div className="flex items-center gap-4 mt-[200px] flex-wrap justify-center">
+        <div className="flex items-center gap-4 mt-[160px] flex-wrap justify-center">
           <label
             className="flex items-center cursor-text"
             style={{

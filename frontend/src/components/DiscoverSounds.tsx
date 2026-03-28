@@ -103,18 +103,18 @@ export default function DiscoverSounds() {
   return (
     <section
       ref={sectionRef}
-      className="w-full pb-[465px] relative"
+      className="w-full pb-[350px] relative"
       style={{
         background: "linear-gradient(180deg, #0B0807 -8%, #130908 5%, #210B0B 10%, #BC6464 35%, #000 60%)",
       }}
     >
-      <div className="max-w-[1280px] mx-auto mt-[307px] text-center">
+      <div className="max-w-[1280px] mx-auto mt-[246px] text-center">
         {/* 제목 — DISCOVER NEW SOUNDS */}
-        <div className="mb-[31px]" style={{ display: "inline-flex", alignItems: "flex-end", gap: "0.7em" }}>
+        <div className="mb-[25px]" style={{ display: "inline-flex", alignItems: "flex-end", gap: "0.7em" }}>
           <span
             className="font-medium font-noto text-[#D9DDE3]"
             style={{
-              fontSize: 48,
+              fontSize: 38,
               lineHeight: 1.16,
               letterSpacing: "0.48px",
               textShadow: TEXT_SHADOW_BASE,
@@ -129,7 +129,7 @@ export default function DiscoverSounds() {
             <span
               className="font-bold font-noto"
               style={{
-                fontSize: 48,
+                fontSize: 38,
                 lineHeight: 1.16,
                 letterSpacing: "5.76px",
                 visibility: "hidden",
@@ -147,7 +147,7 @@ export default function DiscoverSounds() {
                 left: 0,
                 right: 0,
                 textAlign: "center",
-                fontSize: 48,
+                fontSize: 38,
                 lineHeight: 1.16,
                 letterSpacing: "5.76px",
                 textShadow: TEXT_SHADOW_NEW,
@@ -162,7 +162,7 @@ export default function DiscoverSounds() {
           <span
             className="font-medium font-noto text-[#D9DDE3]"
             style={{
-              fontSize: 48,
+              fontSize: 38,
               lineHeight: 1.16,
               letterSpacing: "0.48px",
               textShadow: TEXT_SHADOW_BASE,
@@ -174,9 +174,9 @@ export default function DiscoverSounds() {
 
         {/* 서브타이틀 */}
         <p
-          className="mb-[80px] font-medium font-noto"
+          className="mb-[64px] font-medium font-noto"
           style={{
-            fontSize: 28,
+            fontSize: 22,
             color: "#797D8D",
             lineHeight: 1.2,
             letterSpacing: "-0.56px",

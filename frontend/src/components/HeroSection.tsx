@@ -36,7 +36,7 @@ export default function HeroSection() {
       <div
         className="absolute bottom-0 left-0 right-0"
         style={{
-          height: 200,
+          height: 160,
           background: "linear-gradient(to top, #0a0a0a 0%, transparent 100%)",
         }}
       />
@@ -46,7 +46,7 @@ export default function HeroSection() {
         <h1
           className="m-0 text-[#fffffb] font-bold font-noto"
           style={{
-            fontSize: 68,
+            fontSize: 54,
             letterSpacing: "-1.36px",
             textShadow: "-1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 10px 30px rgba(0,0,0,.55)",
             lineHeight: 1.1,
@@ -55,9 +55,9 @@ export default function HeroSection() {
           가치를 위한, 기록의 첫 걸음
         </h1>
         <p
-          className="mt-[108px] font-inter font-medium"
+          className="mt-[86px] font-inter font-medium"
           style={{
-            fontSize: 19,
+            fontSize: 15,
             color: "#b9babf",
             opacity: 0.83,
             lineHeight: 1.45,
