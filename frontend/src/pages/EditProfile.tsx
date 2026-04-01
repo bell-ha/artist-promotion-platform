@@ -17,6 +17,12 @@ const emptyName = (): NameData => ({
   name: "", english_name: "", description1: "", description2: "", thumbnail_url: "", career_item_ids: [],
 });
 
+interface T2NameData extends NameData { activity_area: string; }
+const emptyT2Name = (): T2NameData => ({
+  name: "", english_name: "", description1: "", description2: "",
+  thumbnail_url: "", activity_area: "", career_item_ids: [],
+});
+
 interface CommonCardFields {
   project_title: string; album_name: string; composer: string;
   category_desc: string; year: string; description: string;
@@ -43,6 +49,20 @@ const emptyAlbum = (): AlbumData => ({
 interface BodyItem { title: string; content: string; }
 interface TextCard { title: string; detail: string; body_items: BodyItem[]; }
 interface TextSection { title: string; description: string; cards: TextCard[]; }
+
+interface ContactData {
+  phone1: string; phone2: string;
+  email1: string; email2: string; email3: string;
+  instagram_url: string; tiktok_url: string; youtube_url: string;
+  extra_description: string;
+}
+const emptyContact = (): ContactData => ({
+  phone1: "", phone2: "", email1: "", email2: "", email3: "",
+  instagram_url: "", tiktok_url: "", youtube_url: "", extra_description: "",
+});
+
+interface SectionImage { image_url: string; }
+interface ImageSection { title: string; description: string; images: SectionImage[]; }
 
 // ── Sub-components ─────────────────────────────────────────────────────────
 function Input({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
@@ -148,13 +168,23 @@ export default function EditProfile() {
   const [uploading, setUploading] = useState(false);
   const [msg, setMsg] = useState("");
 
+  // ── Template 1 state ──────────────────────────
   const [nameData, setNameData] = useState<NameData>(emptyName());
   const [albumData, setAlbumData] = useState<AlbumData>(emptyAlbum());
   const [textSections, setTextSections] = useState<TextSection[]>([]);
 
+  // ── Template 2 state ──────────────────────────
+  const [t2NameData, setT2NameData] = useState<T2NameData>(emptyT2Name());
+  const [t2AlbumData, setT2AlbumData] = useState<AlbumData>(emptyAlbum());
+  const [t2TextSections, setT2TextSections] = useState<TextSection[]>([]);
+  const [t2ContactData, setT2ContactData] = useState<ContactData>(emptyContact());
+  const [t2ImageSections, setT2ImageSections] = useState<ImageSection[]>([]);
+
   useEffect(() => {
     if (!token) { navigate("/"); return; }
     axios.get(`${BACKEND_URL}/profile/career-items`).then(r => setCategories(r.data)).catch(() => {});
+
+    // T1 데이터 로드
     axios.get(`${BACKEND_URL}/profile/me`, { headers }).then(r => {
       const d = r.data;
       if (d.active_template) setActiveTemplate(d.active_template as 1 | 2 | 3);
@@ -180,13 +210,62 @@ export default function EditProfile() {
       }
       if (d.text_sections) setTextSections(d.text_sections);
     }).catch(() => {});
+
+    // T2 데이터 로드
+    axios.get(`${BACKEND_URL}/profile/me/t2`, { headers }).then(r => {
+      const d = r.data;
+      if (d.name_section) {
+        setT2NameData({
+          name: d.name_section.name ?? "",
+          english_name: d.name_section.english_name ?? "",
+          description1: d.name_section.description1 ?? "",
+          description2: d.name_section.description2 ?? "",
+          thumbnail_url: d.name_section.thumbnail_url ?? "",
+          activity_area: d.name_section.activity_area ?? "",
+          career_item_ids: d.name_section.career_item_ids ?? [],
+        });
+      }
+      if (d.album_section) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const toStr = (cards: any[]) => cards.map(c => ({ ...c, year: c.year != null ? String(c.year) : "" }));
+        setT2AlbumData({
+          youtube_cards: toStr(d.album_section.youtube_cards ?? []) as YoutubeCard[],
+          soundcloud_cards: toStr(d.album_section.soundcloud_cards ?? []) as SoundcloudCard[],
+          image_cards: toStr(d.album_section.image_cards ?? []) as ImageCard[],
+          no_image_cards: toStr(d.album_section.no_image_cards ?? []) as NoImageCard[],
+        });
+      }
+      if (d.text_sections) setT2TextSections(d.text_sections);
+      if (d.contact_section) {
+        setT2ContactData({
+          phone1: d.contact_section.phone1 ?? "",
+          phone2: d.contact_section.phone2 ?? "",
+          email1: d.contact_section.email1 ?? "",
+          email2: d.contact_section.email2 ?? "",
+          email3: d.contact_section.email3 ?? "",
+          instagram_url: d.contact_section.instagram_url ?? "",
+          tiktok_url: d.contact_section.tiktok_url ?? "",
+          youtube_url: d.contact_section.youtube_url ?? "",
+          extra_description: d.contact_section.extra_description ?? "",
+        });
+      }
+      if (d.image_sections) setT2ImageSections(d.image_sections);
+    }).catch(() => {});
   }, []); // eslint-disable-line
 
   const notify = (text: string) => { setMsg(text); setTimeout(() => setMsg(""), 2500); };
   const toInt = (v: string) => (v === "" ? null : parseInt(v));
 
-  // ── 전체 저장 ──────────────────────────────────────────────────────────
-  const saveAll = async () => {
+  // ── 템플릿 전환 ────────────────────────────────
+  const switchTemplate = async (n: 1 | 2 | 3) => {
+    setActiveTemplate(n);
+    try {
+      await axios.put(`${BACKEND_URL}/profile/active-template`, { template_number: n }, { headers });
+    } catch { /* 실패해도 UI는 전환 */ }
+  };
+
+  // ── T1 저장 ────────────────────────────────────
+  const saveT1 = async () => {
     setSaving(true);
     try {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -206,7 +285,30 @@ export default function EditProfile() {
     setSaving(false);
   };
 
-  // ── Job toggle ──────────────────────────────────────────────────────────
+  // ── T2 저장 ────────────────────────────────────
+  const saveT2 = async () => {
+    setSaving(true);
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const toNum = (cards: any[]) => cards.map(c => ({ ...c, year: toInt(c.year) }));
+      await Promise.all([
+        axios.put(`${BACKEND_URL}/profile/t2/name-section`, t2NameData, { headers }),
+        axios.put(`${BACKEND_URL}/profile/t2/album-section`, {
+          youtube_cards: toNum(t2AlbumData.youtube_cards),
+          soundcloud_cards: toNum(t2AlbumData.soundcloud_cards),
+          image_cards: toNum(t2AlbumData.image_cards),
+          no_image_cards: toNum(t2AlbumData.no_image_cards),
+        }, { headers }),
+        axios.put(`${BACKEND_URL}/profile/t2/text-sections`, { sections: t2TextSections }, { headers }),
+        axios.put(`${BACKEND_URL}/profile/t2/contact-section`, t2ContactData, { headers }),
+        axios.put(`${BACKEND_URL}/profile/t2/image-sections`, { sections: t2ImageSections }, { headers }),
+      ]);
+      notify("저장 완료!");
+    } catch { notify("저장 실패"); }
+    setSaving(false);
+  };
+
+  // ── T1 Job toggle ───────────────────────────────
   const toggleJob = (id: number) => {
     setNameData(p => ({
       ...p,
@@ -216,13 +318,29 @@ export default function EditProfile() {
     }));
   };
 
-  // ── Album helpers ───────────────────────────────────────────────────────
+  // ── T2 Job toggle ───────────────────────────────
+  const t2ToggleJob = (id: number) => {
+    setT2NameData(p => ({
+      ...p,
+      career_item_ids: p.career_item_ids.includes(id)
+        ? p.career_item_ids.filter(x => x !== id)
+        : [...p.career_item_ids, id],
+    }));
+  };
+
+  // ── T1 Album helpers ────────────────────────────
   const updateCard = <T,>(key: keyof AlbumData, i: number, c: T) =>
     setAlbumData(p => ({ ...p, [key]: (p[key] as T[]).map((v, idx) => idx === i ? c : v) }));
   const removeCard = (key: keyof AlbumData, i: number) =>
     setAlbumData(p => ({ ...p, [key]: (p[key] as unknown[]).filter((_, idx) => idx !== i) }));
 
-  // ── Text section helpers ────────────────────────────────────────────────
+  // ── T2 Album helpers ────────────────────────────
+  const t2UpdateCard = <T,>(key: keyof AlbumData, i: number, c: T) =>
+    setT2AlbumData(p => ({ ...p, [key]: (p[key] as T[]).map((v, idx) => idx === i ? c : v) }));
+  const t2RemoveCard = (key: keyof AlbumData, i: number) =>
+    setT2AlbumData(p => ({ ...p, [key]: (p[key] as unknown[]).filter((_, idx) => idx !== i) }));
+
+  // ── T1 Text section helpers ─────────────────────
   const addTextSection = () => setTextSections(p => [...p, { title: "", description: "", cards: [] }]);
   const removeTextSection = (si: number) => setTextSections(p => p.filter((_, i) => i !== si));
   const updateSec = (si: number, key: keyof Pick<TextSection, "title" | "description">, v: string) =>
@@ -250,6 +368,50 @@ export default function EditProfile() {
       } : c),
     } : sec));
 
+  // ── T2 Text section helpers ─────────────────────
+  const t2AddTextSection = () => setT2TextSections(p => [...p, { title: "", description: "", cards: [] }]);
+  const t2RemoveTextSection = (si: number) => setT2TextSections(p => p.filter((_, i) => i !== si));
+  const t2UpdateSec = (si: number, key: keyof Pick<TextSection, "title" | "description">, v: string) =>
+    setT2TextSections(p => p.map((sec, i) => i === si ? { ...sec, [key]: v } : sec));
+  const t2AddTextCard = (si: number) =>
+    setT2TextSections(p => p.map((sec, i) => i === si ? { ...sec, cards: [...sec.cards, { title: "", detail: "", body_items: [] }] } : sec));
+  const t2RemoveTextCard = (si: number, ci: number) =>
+    setT2TextSections(p => p.map((sec, i) => i === si ? { ...sec, cards: sec.cards.filter((_, j) => j !== ci) } : sec));
+  const t2UpdateTextCard = (si: number, ci: number, key: keyof Pick<TextCard, "title" | "detail">, v: string) =>
+    setT2TextSections(p => p.map((sec, i) => i === si ? {
+      ...sec, cards: sec.cards.map((c, j) => j === ci ? { ...c, [key]: v } : c),
+    } : sec));
+  const t2AddBodyItem = (si: number, ci: number) =>
+    setT2TextSections(p => p.map((sec, i) => i === si ? {
+      ...sec, cards: sec.cards.map((c, j) => j === ci ? { ...c, body_items: [...c.body_items, { title: "", content: "" }] } : c),
+    } : sec));
+  const t2RemoveBodyItem = (si: number, ci: number, bi: number) =>
+    setT2TextSections(p => p.map((sec, i) => i === si ? {
+      ...sec, cards: sec.cards.map((c, j) => j === ci ? { ...c, body_items: c.body_items.filter((_, k) => k !== bi) } : c),
+    } : sec));
+  const t2UpdateBodyItem = (si: number, ci: number, bi: number, key: keyof BodyItem, v: string) =>
+    setT2TextSections(p => p.map((sec, i) => i === si ? {
+      ...sec, cards: sec.cards.map((c, j) => j === ci ? {
+        ...c, body_items: c.body_items.map((b, k) => k === bi ? { ...b, [key]: v } : b),
+      } : c),
+    } : sec));
+
+  // ── T2 Image section helpers ────────────────────
+  const t2AddImageSection = () => setT2ImageSections(p => [...p, { title: "", description: "", images: [] }]);
+  const t2RemoveImageSection = (si: number) => setT2ImageSections(p => p.filter((_, i) => i !== si));
+  const t2UpdateImageSec = (si: number, key: keyof Pick<ImageSection, "title" | "description">, v: string) =>
+    setT2ImageSections(p => p.map((sec, i) => i === si ? { ...sec, [key]: v } : sec));
+  const t2AddImage = (si: number) =>
+    setT2ImageSections(p => p.map((sec, i) => i === si && sec.images.length < 4
+      ? { ...sec, images: [...sec.images, { image_url: "" }] }
+      : sec));
+  const t2RemoveImage = (si: number, ii: number) =>
+    setT2ImageSections(p => p.map((sec, i) => i === si ? { ...sec, images: sec.images.filter((_, j) => j !== ii) } : sec));
+  const t2UpdateImageUrl = (si: number, ii: number, url: string) =>
+    setT2ImageSections(p => p.map((sec, i) => i === si
+      ? { ...sec, images: sec.images.map((img, j) => j === ii ? { image_url: url } : img) }
+      : sec));
+
   const fileProps = { uploading, setUploading, headers };
 
   return (
@@ -266,36 +428,33 @@ export default function EditProfile() {
       <main style={s.main}>
         <h1 style={s.title}>Edit Profile</h1>
 
-        {/* 현재 템플릿 (enum 표시) */}
+        {/* 템플릿 선택 */}
         <div style={{ marginBottom: 36 }}>
-          <div style={s.label}>현재 템플릿</div>
+          <div style={s.label}>템플릿 선택</div>
           <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
             {([1, 2, 3] as (1 | 2 | 3)[]).map(n => (
-              <div key={n} style={{
+              <button key={n} onClick={() => switchTemplate(n)} style={{
                 padding: "6px 16px", borderRadius: 20, fontSize: 12, fontWeight: 700, letterSpacing: ".04em",
                 border: activeTemplate === n ? "1px solid #fff" : "1px solid rgba(255,255,255,.15)",
                 background: activeTemplate === n ? "#fff" : "transparent",
-                color: activeTemplate === n ? "#000" : "rgba(255,255,255,.25)",
+                color: activeTemplate === n ? "#000" : "rgba(255,255,255,.4)",
+                cursor: "pointer",
               }}>
                 Template {n}
-              </div>
+              </button>
             ))}
           </div>
         </div>
 
+        {/* ════════════════════ TEMPLATE 1 ════════════════════ */}
         {activeTemplate === 1 && (
           <div style={{ display: "flex", flexDirection: "column", gap: 48 }}>
 
             {/* ── NAME SECTION ─────────────────────────── */}
             <div>
               <SectionHeader title="Name Section" />
-              <FileInput
-                label="썸네일 사진"
-                accept="image/*"
-                currentUrl={nameData.thumbnail_url}
-                onUploaded={url => setNameData(p => ({ ...p, thumbnail_url: url }))}
-                {...fileProps}
-              />
+              <FileInput label="썸네일 사진" accept="image/*" currentUrl={nameData.thumbnail_url}
+                onUploaded={url => setNameData(p => ({ ...p, thumbnail_url: url }))} {...fileProps} />
               <Input label="이름" value={nameData.name} onChange={v => setNameData(p => ({ ...p, name: v }))} />
               <Input label="영어 이름" value={nameData.english_name} onChange={v => setNameData(p => ({ ...p, english_name: v }))} />
               <Textarea label="설명1" value={nameData.description1} onChange={v => setNameData(p => ({ ...p, description1: v }))} />
@@ -303,9 +462,7 @@ export default function EditProfile() {
 
               <div style={{ ...s.label, marginBottom: 8 }}>직업 선택 (복수 가능)</div>
               {categories.length === 0 && (
-                <p style={{ color: "rgba(255,255,255,.4)", fontSize: 13, margin: "0 0 12px" }}>
-                  카테고리 데이터 없음 (seed 실행 필요)
-                </p>
+                <p style={{ color: "rgba(255,255,255,.4)", fontSize: 13, margin: "0 0 12px" }}>카테고리 데이터 없음 (seed 실행 필요)</p>
               )}
               {categories.map(cat => (
                 <div key={cat.id} style={{ marginBottom: 12 }}>
@@ -331,7 +488,6 @@ export default function EditProfile() {
                 <button style={s.btn} onClick={() => setAlbumData(p => ({ ...p, image_cards: [...p.image_cards, { ...emptyCommon(), hyperlink: "", image_url: "" }] }))}>+ Image 카드</button>
                 <button style={s.btn} onClick={() => setAlbumData(p => ({ ...p, no_image_cards: [...p.no_image_cards, { ...emptyCommon(), mp3_url: "" }] }))}>+ No-Image 카드</button>
               </div>
-
               {albumData.youtube_cards.map((c, i) => (
                 <CardBox key={i} title={`YouTube #${i + 1}`} onRemove={() => removeCard("youtube_cards", i)}>
                   <Input label="YouTube 링크" value={c.link} onChange={v => updateCard("youtube_cards", i, { ...c, link: v })} />
@@ -347,25 +503,15 @@ export default function EditProfile() {
               {albumData.image_cards.map((c, i) => (
                 <CardBox key={i} title={`Image 카드 #${i + 1}`} onRemove={() => removeCard("image_cards", i)}>
                   <Input label="하이퍼링크" value={c.hyperlink} onChange={v => updateCard("image_cards", i, { ...c, hyperlink: v })} />
-                  <FileInput
-                    label="이미지"
-                    accept="image/*"
-                    currentUrl={c.image_url}
-                    onUploaded={url => updateCard("image_cards", i, { ...c, image_url: url })}
-                    {...fileProps}
-                  />
+                  <FileInput label="이미지" accept="image/*" currentUrl={c.image_url}
+                    onUploaded={url => updateCard("image_cards", i, { ...c, image_url: url })} {...fileProps} />
                   <CommonFields card={c} update={nc => updateCard("image_cards", i, nc)} />
                 </CardBox>
               ))}
               {albumData.no_image_cards.map((c, i) => (
                 <CardBox key={i} title={`No-Image 카드 #${i + 1}`} onRemove={() => removeCard("no_image_cards", i)}>
-                  <FileInput
-                    label="MP3 파일"
-                    accept="audio/*"
-                    currentUrl={c.mp3_url}
-                    onUploaded={url => updateCard("no_image_cards", i, { ...c, mp3_url: url })}
-                    {...fileProps}
-                  />
+                  <FileInput label="MP3 파일" accept="audio/*" currentUrl={c.mp3_url}
+                    onUploaded={url => updateCard("no_image_cards", i, { ...c, mp3_url: url })} {...fileProps} />
                   <CommonFields card={c} update={nc => updateCard("no_image_cards", i, nc)} />
                 </CardBox>
               ))}
@@ -415,15 +561,183 @@ export default function EditProfile() {
               ))}
             </div>
 
-            {/* ── 전체 저장 버튼 ────────────────────────── */}
             <button
               style={{ ...s.btnPrimary, width: "100%", padding: "14px", fontSize: 15, opacity: (saving || uploading) ? 0.6 : 1 }}
               disabled={saving || uploading}
-              onClick={saveAll}
+              onClick={saveT1}
             >
               {saving ? "저장 중..." : "저장"}
             </button>
+          </div>
+        )}
 
+        {/* ════════════════════ TEMPLATE 2 ════════════════════ */}
+        {activeTemplate === 2 && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 48 }}>
+
+            {/* ── NAME SECTION ─────────────────────────── */}
+            <div>
+              <SectionHeader title="Name Section" />
+              <FileInput label="썸네일 사진" accept="image/*" currentUrl={t2NameData.thumbnail_url}
+                onUploaded={url => setT2NameData(p => ({ ...p, thumbnail_url: url }))} {...fileProps} />
+              <Input label="이름" value={t2NameData.name} onChange={v => setT2NameData(p => ({ ...p, name: v }))} />
+              <Input label="영어 이름" value={t2NameData.english_name} onChange={v => setT2NameData(p => ({ ...p, english_name: v }))} />
+              <Textarea label="설명1" value={t2NameData.description1} onChange={v => setT2NameData(p => ({ ...p, description1: v }))} />
+              <Textarea label="설명2" value={t2NameData.description2} onChange={v => setT2NameData(p => ({ ...p, description2: v }))} />
+              <Input label="활동지역" value={t2NameData.activity_area} onChange={v => setT2NameData(p => ({ ...p, activity_area: v }))} />
+
+              <div style={{ ...s.label, marginBottom: 8 }}>직업 선택 (복수 가능)</div>
+              {categories.map(cat => (
+                <div key={cat.id} style={{ marginBottom: 12 }}>
+                  <div style={{ color: "rgba(255,255,255,.45)", fontSize: 11, fontWeight: 700, marginBottom: 6, letterSpacing: ".08em" }}>{cat.name}</div>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                    {cat.items.map(item => (
+                      <label key={item.id} style={s.checkLabel}>
+                        <input type="checkbox" checked={t2NameData.career_item_ids.includes(item.id)} onChange={() => t2ToggleJob(item.id)} style={{ marginRight: 5 }} />
+                        {item.name}
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* ── ALBUM SECTION ────────────────────────── */}
+            <div>
+              <SectionHeader title="Album Section" />
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 16 }}>
+                <button style={s.btn} onClick={() => setT2AlbumData(p => ({ ...p, youtube_cards: [...p.youtube_cards, { ...emptyCommon(), link: "" }] }))}>+ YouTube 카드</button>
+                <button style={s.btn} onClick={() => setT2AlbumData(p => ({ ...p, soundcloud_cards: [...p.soundcloud_cards, { ...emptyCommon(), link: "" }] }))}>+ SoundCloud 카드</button>
+                <button style={s.btn} onClick={() => setT2AlbumData(p => ({ ...p, image_cards: [...p.image_cards, { ...emptyCommon(), hyperlink: "", image_url: "" }] }))}>+ Image 카드</button>
+                <button style={s.btn} onClick={() => setT2AlbumData(p => ({ ...p, no_image_cards: [...p.no_image_cards, { ...emptyCommon(), mp3_url: "" }] }))}>+ No-Image 카드</button>
+              </div>
+              {t2AlbumData.youtube_cards.map((c, i) => (
+                <CardBox key={i} title={`YouTube #${i + 1}`} onRemove={() => t2RemoveCard("youtube_cards", i)}>
+                  <Input label="YouTube 링크" value={c.link} onChange={v => t2UpdateCard("youtube_cards", i, { ...c, link: v })} />
+                  <CommonFields card={c} update={nc => t2UpdateCard("youtube_cards", i, nc)} />
+                </CardBox>
+              ))}
+              {t2AlbumData.soundcloud_cards.map((c, i) => (
+                <CardBox key={i} title={`SoundCloud #${i + 1}`} onRemove={() => t2RemoveCard("soundcloud_cards", i)}>
+                  <Input label="SoundCloud 링크" value={c.link} onChange={v => t2UpdateCard("soundcloud_cards", i, { ...c, link: v })} />
+                  <CommonFields card={c} update={nc => t2UpdateCard("soundcloud_cards", i, nc)} />
+                </CardBox>
+              ))}
+              {t2AlbumData.image_cards.map((c, i) => (
+                <CardBox key={i} title={`Image 카드 #${i + 1}`} onRemove={() => t2RemoveCard("image_cards", i)}>
+                  <Input label="하이퍼링크" value={c.hyperlink} onChange={v => t2UpdateCard("image_cards", i, { ...c, hyperlink: v })} />
+                  <FileInput label="이미지" accept="image/*" currentUrl={c.image_url}
+                    onUploaded={url => t2UpdateCard("image_cards", i, { ...c, image_url: url })} {...fileProps} />
+                  <CommonFields card={c} update={nc => t2UpdateCard("image_cards", i, nc)} />
+                </CardBox>
+              ))}
+              {t2AlbumData.no_image_cards.map((c, i) => (
+                <CardBox key={i} title={`No-Image 카드 #${i + 1}`} onRemove={() => t2RemoveCard("no_image_cards", i)}>
+                  <FileInput label="MP3 파일" accept="audio/*" currentUrl={c.mp3_url}
+                    onUploaded={url => t2UpdateCard("no_image_cards", i, { ...c, mp3_url: url })} {...fileProps} />
+                  <CommonFields card={c} update={nc => t2UpdateCard("no_image_cards", i, nc)} />
+                </CardBox>
+              ))}
+              {Object.values(t2AlbumData).flat().length === 0 && (
+                <p style={{ color: "rgba(255,255,255,.4)", fontSize: 13 }}>카드를 추가해보세요.</p>
+              )}
+            </div>
+
+            {/* ── IMAGE SECTIONS ───────────────────────── */}
+            <div>
+              <SectionHeader title="Image Sections" />
+              <button style={{ ...s.btn, marginBottom: 16 }} onClick={t2AddImageSection}>+ Image Section 추가</button>
+              {t2ImageSections.length === 0 && (
+                <p style={{ color: "rgba(255,255,255,.4)", fontSize: 13 }}>섹션을 추가해보세요.</p>
+              )}
+              {t2ImageSections.map((sec, si) => (
+                <div key={si} style={{ ...s.cardBox, marginBottom: 16 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 12 }}>
+                    <b style={{ color: "#fff" }}>Image Section #{si + 1}</b>
+                    <button style={s.btnDanger} onClick={() => t2RemoveImageSection(si)}>섹션 삭제</button>
+                  </div>
+                  <Input label="섹션 제목" value={sec.title} onChange={v => t2UpdateImageSec(si, "title", v)} />
+                  <Textarea label="섹션 설명" value={sec.description} onChange={v => t2UpdateImageSec(si, "description", v)} />
+                  <div style={{ ...s.label, marginTop: 12, marginBottom: 8 }}>이미지 ({sec.images.length}/4)</div>
+                  {sec.images.map((img, ii) => (
+                    <div key={ii} style={{ ...s.cardBox, background: "rgba(255,255,255,.04)", marginBottom: 8 }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
+                        <span style={{ color: "rgba(255,255,255,.7)", fontSize: 13 }}>이미지 #{ii + 1}</span>
+                        <button style={s.btnDanger} onClick={() => t2RemoveImage(si, ii)}>삭제</button>
+                      </div>
+                      <FileInput label="이미지 업로드" accept="image/*" currentUrl={img.image_url}
+                        onUploaded={url => t2UpdateImageUrl(si, ii, url)} {...fileProps} />
+                    </div>
+                  ))}
+                  {sec.images.length < 4 && (
+                    <button style={{ ...s.btn, fontSize: 12, padding: "4px 10px" }} onClick={() => t2AddImage(si)}>+ 이미지 추가</button>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            {/* ── TEXT SECTIONS ────────────────────────── */}
+            <div>
+              <SectionHeader title="Text Sections" />
+              <button style={{ ...s.btn, marginBottom: 16 }} onClick={t2AddTextSection}>+ Text Section 추가</button>
+              {t2TextSections.length === 0 && (
+                <p style={{ color: "rgba(255,255,255,.4)", fontSize: 13 }}>섹션을 추가해보세요.</p>
+              )}
+              {t2TextSections.map((sec, si) => (
+                <div key={si} style={{ ...s.cardBox, marginBottom: 16 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 12 }}>
+                    <b style={{ color: "#fff" }}>Section #{si + 1}</b>
+                    <button style={s.btnDanger} onClick={() => t2RemoveTextSection(si)}>섹션 삭제</button>
+                  </div>
+                  <Input label="섹션 제목" value={sec.title} onChange={v => t2UpdateSec(si, "title", v)} />
+                  <Textarea label="섹션 설명" value={sec.description} onChange={v => t2UpdateSec(si, "description", v)} />
+                  {sec.cards.map((card, ci) => (
+                    <div key={ci} style={{ ...s.cardBox, background: "rgba(255,255,255,.04)", marginTop: 10 }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
+                        <b style={{ color: "rgba(255,255,255,.8)", fontSize: 13 }}>Card #{ci + 1}</b>
+                        <button style={s.btnDanger} onClick={() => t2RemoveTextCard(si, ci)}>카드 삭제</button>
+                      </div>
+                      <Input label="제목" value={card.title} onChange={v => t2UpdateTextCard(si, ci, "title", v)} />
+                      <Textarea label="세부 사항" value={card.detail} onChange={v => t2UpdateTextCard(si, ci, "detail", v)} />
+                      {card.body_items.map((b, bi) => (
+                        <div key={bi} style={{ background: "rgba(255,255,255,.05)", borderRadius: 8, padding: 10, marginBottom: 6 }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
+                            <span style={{ color: "rgba(255,255,255,.6)", fontSize: 12 }}>본문 #{bi + 1}</span>
+                            <button style={{ ...s.btnDanger, padding: "2px 8px", fontSize: 11 }} onClick={() => t2RemoveBodyItem(si, ci, bi)}>삭제</button>
+                          </div>
+                          <Input label="제목" value={b.title} onChange={v => t2UpdateBodyItem(si, ci, bi, "title", v)} />
+                          <Input label="내용" value={b.content} onChange={v => t2UpdateBodyItem(si, ci, bi, "content", v)} />
+                        </div>
+                      ))}
+                      <button style={{ ...s.btn, fontSize: 12, padding: "4px 10px", marginTop: 6 }} onClick={() => t2AddBodyItem(si, ci)}>+ 본문 추가</button>
+                    </div>
+                  ))}
+                  <button style={{ ...s.btn, marginTop: 10 }} onClick={() => t2AddTextCard(si)}>+ 카드 추가</button>
+                </div>
+              ))}
+            </div>
+
+            {/* ── CONTACT SECTION ──────────────────────── */}
+            <div>
+              <SectionHeader title="Contact Section" />
+              <Input label="전화번호 1" value={t2ContactData.phone1} onChange={v => setT2ContactData(p => ({ ...p, phone1: v }))} />
+              <Input label="전화번호 2" value={t2ContactData.phone2} onChange={v => setT2ContactData(p => ({ ...p, phone2: v }))} />
+              <Input label="이메일 1 (필수)" value={t2ContactData.email1} onChange={v => setT2ContactData(p => ({ ...p, email1: v }))} />
+              <Input label="이메일 2" value={t2ContactData.email2} onChange={v => setT2ContactData(p => ({ ...p, email2: v }))} />
+              <Input label="이메일 3" value={t2ContactData.email3} onChange={v => setT2ContactData(p => ({ ...p, email3: v }))} />
+              <Input label="Instagram URL" value={t2ContactData.instagram_url} onChange={v => setT2ContactData(p => ({ ...p, instagram_url: v }))} />
+              <Input label="TikTok URL" value={t2ContactData.tiktok_url} onChange={v => setT2ContactData(p => ({ ...p, tiktok_url: v }))} />
+              <Input label="YouTube URL" value={t2ContactData.youtube_url} onChange={v => setT2ContactData(p => ({ ...p, youtube_url: v }))} />
+              <Textarea label="추가 설명" value={t2ContactData.extra_description} onChange={v => setT2ContactData(p => ({ ...p, extra_description: v }))} />
+            </div>
+
+            <button
+              style={{ ...s.btnPrimary, width: "100%", padding: "14px", fontSize: 15, opacity: (saving || uploading) ? 0.6 : 1 }}
+              disabled={saving || uploading}
+              onClick={saveT2}
+            >
+              {saving ? "저장 중..." : "저장"}
+            </button>
           </div>
         )}
       </main>
