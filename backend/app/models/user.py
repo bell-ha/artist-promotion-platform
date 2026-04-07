@@ -15,6 +15,12 @@ class LoginProvider(str, enum.Enum):
     GOOGLE = "google"
     NAVER = "naver"
 
+# 3. 구독 플랜 설정
+class SubscriptionPlan(str, enum.Enum):
+    FREE = "free"
+    STANDARD = "standard"
+    PREMIUM = "premium"
+
 class User(SQLModel, table=True):
     __tablename__ = "users"
 
@@ -44,3 +50,8 @@ class User(SQLModel, table=True):
 
     # 선택된 템플릿 번호 (1, 2, 3)
     active_template: int = Field(default=1)
+
+    # 구독 플랜
+    subscription_plan: SubscriptionPlan = Field(
+        sa_column=Column(Enum(SubscriptionPlan), default=SubscriptionPlan.FREE, nullable=False)
+    )

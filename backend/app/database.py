@@ -50,6 +50,13 @@ async def init_db():
                 )
             )
 
+        # users 테이블에 subscription_plan 컬럼 추가
+        await conn.execute(
+            __import__("sqlalchemy").text(
+                "ALTER TABLE users ADD COLUMN IF NOT EXISTS subscription_plan VARCHAR NOT NULL DEFAULT 'free'"
+            )
+        )
+
 # 의존성 주입을 위한 세션 제공 함수
 # NeonDB가 커넥션을 끊은 경우 최대 3회 재시도 (0.5s → 1s 딜레이)
 async def get_session() -> AsyncGenerator[AsyncSession, None]:
