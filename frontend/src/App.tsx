@@ -5,6 +5,11 @@ import MyPage from "./pages/MyPage";
 import EditProfile from "./pages/EditProfile";
 import Profile from "./pages/Profile";
 import CategoryList from "./pages/CategoryList";
+import About from "./pages/About";
+import Terms from "./pages/Terms";
+import Privacy from "./pages/Privacy";
+import Guide from "./pages/Guide";
+import Footer from "./components/Footer";
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -33,9 +38,16 @@ export default function App() {
         <Route path="/category/:category/:item" element={<CategoryList />} />
         <Route path="/category/:category" element={<CategoryList />} />
 
+        {/* 회사 정보 페이지 */}
+        <Route path="/about" element={<About />} />
+        <Route path="/terms" element={<Terms />} />
+        <Route path="/privacy" element={<Privacy />} />
+        <Route path="/guide" element={<Guide />} />
+
         {/* 없는 주소는 홈으로 */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
+      <Footer />
     </Router>
   );
 }
