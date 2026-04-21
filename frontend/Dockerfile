@@ -12,6 +12,7 @@ RUN npm run build
 FROM nginxinc/nginx-unprivileged:stable-alpine
 # 빌드된 결과물을 Nginx 폴더로 복사
 COPY --from=build /app/dist /usr/share/nginx/html
+COPY nginx.conf /etc/nginx/conf.d/default.conf
 EXPOSE 8080
 # 비특권 이미지는 기본적으로 8080 포트를 사용합니다.
 CMD ["nginx", "-g", "daemon off;"]
