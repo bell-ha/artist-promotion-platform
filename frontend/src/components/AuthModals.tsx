@@ -214,7 +214,6 @@ export default function AuthModals({ isOpen, mode, onClose, onModeChange, onLogi
         <div
           className="fixed inset-0 z-[1000] flex items-center justify-center p-4"
           style={{ background: "rgba(0,0,0,.45)", backdropFilter: "blur(10px)" }}
-          onClick={handleClose}
         >
           <div
             className="relative w-[min(520px,92vw)] p-[26px] rounded-[18px] border border-white/20"
