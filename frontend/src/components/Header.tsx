@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ASSETS } from "../lib/assets";
-import type { User, CareerCategory } from "../types/auth";
+import type { User, AuthMode, CareerCategory } from "../types/auth";
+import AuthModals from "./AuthModals";
 
 const CATEGORIES: CareerCategory[] = [
   { label: "PERFORMER", items: ["보컬", "인디 싱어송라이터", "뮤지컬배우"] },
@@ -13,17 +14,21 @@ const CATEGORIES: CareerCategory[] = [
   { label: "VISUAL ARTIST", items: ["미디어아트 작가", "미술 작가", "설치미술가", "공연 테크니컬 디렉터"] },
 ];
 
-interface HeaderProps {
-  user: User | null;
-  onSignUp: () => void;
-  onLogIn: () => void;
-  onLogOut: () => void;
-}
-
-export default function Header({ user, onSignUp, onLogIn, onLogOut }: HeaderProps) {
+export default function Header() {
   const navigate = useNavigate();
+  const [user, setUser] = useState<User | null>(null);
+  const [authOpen, setAuthOpen] = useState(false);
+  const [authMode, setAuthMode] = useState<AuthMode>("signin");
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [expandedCat, setExpandedCat] = useState<string | null>(null);
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    const nickname = localStorage.getItem("nickname");
+    if (token && nickname && !nickname.startsWith("User_")) {
+      setUser({ nickname });
+    }
+  }, []);
 
   const closeDrawer = () => {
     setDrawerOpen(false);
@@ -75,7 +80,7 @@ export default function Header({ user, onSignUp, onLogIn, onLogOut }: HeaderProp
                   <button
                     className="border border-white/18 bg-white/6 text-white px-[10px] py-[8px] rounded-[6px] cursor-pointer font-extrabold text-[12px] hover:bg-white/12 transition-colors"
                     type="button"
-                    onClick={onLogOut}
+                    onClick={() => { localStorage.clear(); window.location.reload(); }}
                   >
                     LogOut
                   </button>
@@ -85,14 +90,14 @@ export default function Header({ user, onSignUp, onLogIn, onLogOut }: HeaderProp
                   <button
                     className="border-none bg-transparent text-white px-[10px] py-[8px] cursor-pointer font-normal text-[15px] hover:opacity-70 transition-opacity"
                     type="button"
-                    onClick={onSignUp}
+                    onClick={() => { setAuthMode("signup"); setAuthOpen(true); }}
                   >
                     Sign Up
                   </button>
                   <button
                     className="border bg-white text-black px-[14px] py-[8px] rounded-[6px] bg-transparent cursor-pointer font-normal text-[14px] hover:bg-white/70 transition-colors"
                     type="button"
-                    onClick={onLogIn}
+                    onClick={() => { setAuthMode("signin"); setAuthOpen(true); }}
                   >
                     Log In
                   </button>
@@ -197,7 +202,7 @@ export default function Header({ user, onSignUp, onLogIn, onLogOut }: HeaderProp
                   <button
                     className="flex-1 border border-white/18 bg-white/6 text-white py-[9px] rounded-[6px] cursor-pointer font-extrabold text-[13px] hover:bg-white/12 transition-colors"
                     type="button"
-                    onClick={() => { onLogOut(); closeDrawer(); }}
+                    onClick={() => { localStorage.clear(); window.location.reload(); closeDrawer(); }}
                   >
                     LogOut
                   </button>
@@ -207,14 +212,14 @@ export default function Header({ user, onSignUp, onLogIn, onLogOut }: HeaderProp
                   <button
                     className="flex-1 border-none bg-transparent text-white py-[9px] cursor-pointer font-normal text-[14px] hover:opacity-70 transition-opacity"
                     type="button"
-                    onClick={() => { onSignUp(); closeDrawer(); }}
+                    onClick={() => { setAuthMode("signup"); setAuthOpen(true); closeDrawer(); }}
                   >
                     Sign Up
                   </button>
                   <button
                     className="flex-1 border bg-white text-black py-[9px] rounded-[6px] cursor-pointer font-normal text-[14px] hover:bg-white/70 transition-colors"
                     type="button"
-                    onClick={() => { onLogIn(); closeDrawer(); }}
+                    onClick={() => { setAuthMode("signin"); setAuthOpen(true); closeDrawer(); }}
                   >
                     Log In
                   </button>
@@ -259,6 +264,14 @@ export default function Header({ user, onSignUp, onLogIn, onLogOut }: HeaderProp
           </div>
         </div>
       )}
+
+      <AuthModals
+        isOpen={authOpen}
+        mode={authMode}
+        onClose={() => setAuthOpen(false)}
+        onModeChange={setAuthMode}
+        onLoginSuccess={(u) => { setUser(u); setAuthOpen(false); }}
+      />
     </>
   );
 }
