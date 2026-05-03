@@ -9,12 +9,8 @@ export const dummyTemplate2: Template2Data = {
     description1: "Guitarist / Session Guitarist",
     description2:
       "Jazz, Rock, Pop 등 다양한 장르에서 활동하는 세션 기타리스트. 다수의 공연 및 레코딩 세션 경험을 보유하고 있으며, 풍부한 음악적 표현력으로 아티스트들과 협업하고 있습니다.",
-    thumbnail_url: "",
+    thumbnail_url: "/src/assets/images/template2_thumbnail.png",
     activity_area: "서울 / Seoul",
-    jobs: [
-      { id: 1, name: "Guitarist" },
-      { id: 2, name: "Session Guitarist" },
-    ],
   },
 
   album_section: {
@@ -24,11 +20,11 @@ export const dummyTemplate2: Template2Data = {
         order: 0,
         link: "https://www.youtube.com/embed/dQw4w9WgXcQ",
         project_title: "PERFORMANCE ARCHIVE 01",
-        project_subtitle: "2023단여류",
-        album_name: "2023단여류",
+        project_subtitle: "2023단마루",
+        album_name: "2023단마루",
         composer: "팀플레이/기타 세션",
         year: 2023,
-        description: "2023년 단여류 콘서트 공연 영상. 재즈와 팝의 경계를 넘나드는 세션 연주를 담았습니다.",
+        description: "2023년 단마루 콘서트 공연 영상. 재즈와 팝의 경계를 넘나드는 세션 연주를 담았습니다.",
       },
       {
         type: "youtube",

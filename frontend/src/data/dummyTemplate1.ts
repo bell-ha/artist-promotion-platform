@@ -9,12 +9,7 @@ export const dummyTemplate1: Template1Data = {
     description1: "Music Producer / Artist",
     description2:
       "작곡가, 편곡가, 프로듀서로서 다양한 장르와 프로젝트에 참여해왔습니다. 음악을 통해 감동을 전달하고, 창의적인 협업을 추구합니다.",
-    thumbnail_url: "",
-    jobs: [
-      { id: 1, name: "Composer" },
-      { id: 2, name: "Arranger" },
-      { id: 3, name: "Producer" },
-    ],
+    thumbnail_url: "/src/assets/images/template1_thumbnail.png",
   },
 
   album_section: {

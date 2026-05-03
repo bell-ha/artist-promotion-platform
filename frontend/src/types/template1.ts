@@ -2,18 +2,12 @@
 // Template 1 : 창작자 (Music Producer / Composer)
 // ──────────────────────────────────────────────
 
-export interface T1Job {
-  id: number;
-  name: string;
-}
-
 export interface T1NameSection {
   name: string;
   english_name: string;
   description1?: string;
   description2?: string;
   thumbnail_url?: string;
-  jobs: T1Job[];
 }
 
 // ── Album Section Cards ───────────────────────

@@ -85,20 +85,10 @@ function HeroSection({ ns }: { ns: Template1Data["name_section"] }) {
       <div style={s.heroOverlay} />
 
       <div style={s.heroContent}>
-        {/* 직업 태그 */}
-        {ns.jobs.length > 0 && (
-          <div style={s.jobRow}>
-            {ns.jobs.map((j) => (
-              <span key={j.id} style={s.jobTag}>
-                {j.name}
-              </span>
-            ))}
-          </div>
-        )}
-
         {/* 이름 */}
         <h1 style={s.heroName}>{ns.name}</h1>
         <p style={s.heroNameEn}>{ns.english_name}</p>
+
 
         {/* 소개 */}
         {ns.description1 && <p style={s.heroRole}>{ns.description1}</p>}
@@ -353,7 +343,7 @@ const s: Record<string, React.CSSProperties> = {
   // Hero
   hero: {
     position: "relative",
-    minHeight: 480,
+    minHeight: 1000,
     display: "flex",
     alignItems: "flex-end",
     overflow: "hidden",
@@ -363,7 +353,7 @@ const s: Record<string, React.CSSProperties> = {
     position: "absolute",
     inset: 0,
     backgroundSize: "cover",
-    backgroundPosition: "center top",
+    backgroundPosition: "center center",
     backgroundRepeat: "no-repeat",
   },
   heroOverlay: {
@@ -379,23 +369,6 @@ const s: Record<string, React.CSSProperties> = {
     maxWidth: 760,
     width: "100%",
     margin: "0 auto",
-  },
-  jobRow: {
-    display: "flex",
-    flexWrap: "wrap" as const,
-    gap: 8,
-    marginBottom: 16,
-  },
-  jobTag: {
-    fontSize: 11,
-    fontWeight: 700,
-    letterSpacing: "0.1em",
-    color: "rgba(255,255,255,0.55)",
-    background: "rgba(255,255,255,0.07)",
-    border: "1px solid rgba(255,255,255,0.12)",
-    borderRadius: 20,
-    padding: "4px 12px",
-    textTransform: "uppercase" as const,
   },
   heroName: {
     margin: "0 0 6px",

@@ -2,11 +2,6 @@
 // Template 2 : 퍼포머 (Guitarist / Session Artist)
 // ──────────────────────────────────────────────
 
-export interface T2Job {
-  id: number;
-  name: string;
-}
-
 export interface T2NameSection {
   name: string;
   english_name: string;
@@ -14,7 +9,6 @@ export interface T2NameSection {
   description2?: string;
   thumbnail_url?: string;
   activity_area?: string;
-  jobs: T2Job[];
 }
 
 // ── Album Section Cards (Template 2 동일 구조) ─
