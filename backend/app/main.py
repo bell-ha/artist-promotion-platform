@@ -1,3 +1,4 @@
+import os
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -6,6 +7,7 @@ from starlette.middleware.sessions import SessionMiddleware
 from app.database import init_db, seed_categories
 from app.api import auth
 from app.api import profile
+from app.api import payment
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -20,7 +22,7 @@ app = FastAPI(
 )
 
 # ✅ 미들웨어 설정
-app.add_middleware(SessionMiddleware, secret_key="your-temporary-session-secret")
+app.add_middleware(SessionMiddleware, secret_key=os.getenv("SESSION_SECRET", "dev-session-secret-change-in-production"))
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -32,6 +34,7 @@ app.add_middleware(
 # ✅ 라우터 등록
 app.include_router(auth.router)
 app.include_router(profile.router)
+app.include_router(payment.router)
 
 @app.get("/")
 async def root():

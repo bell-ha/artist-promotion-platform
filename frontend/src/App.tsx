@@ -9,6 +9,7 @@ import About from "./pages/About";
 import Terms from "./pages/Terms";
 import Privacy from "./pages/Privacy";
 import Guide from "./pages/Guide";
+import Upgrade from "./pages/Upgrade";
 import Footer from "./components/Footer";
 
 function ScrollToTop() {
@@ -37,6 +38,9 @@ export default function App() {
         {/* 카테고리 목록 (mock) */}
         <Route path="/category/:category/:item" element={<CategoryList />} />
         <Route path="/category/:category" element={<CategoryList />} />
+
+        {/* 플랜 업그레이드 */}
+        <Route path="/upgrade" element={<Upgrade />} />
 
         {/* 회사 정보 페이지 */}
         <Route path="/about" element={<About />} />

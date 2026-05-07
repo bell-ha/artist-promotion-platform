@@ -1,3 +1,5 @@
+from collections import defaultdict
+
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -27,40 +29,45 @@ from app.core.deps import get_current_user
 router = APIRouter(prefix="/profile", tags=["Profile"])
 
 
+def _row_to_dict(row) -> dict:
+    return {c.name: getattr(row, c.name) for c in row.__table__.columns}
+
+
 # ── 파일 업로드 (Cloudinary) ───────────────────
 @router.post("/upload")
 async def upload_file(
     file: UploadFile = File(...),
     current_user: User = Depends(get_current_user),
 ):
+    import asyncio
     import cloudinary.uploader
     import app.cloudinary  # cloudinary config 초기화
 
     contents = await file.read()
-    result = cloudinary.uploader.upload(contents, resource_type="auto")
+    result = await asyncio.to_thread(cloudinary.uploader.upload, contents, resource_type="auto")
     return {"url": result["secure_url"]}
 
 
 # ── 직업 카테고리 목록 ─────────────────────────
 @router.get("/career-items")
 async def get_career_items(session: AsyncSession = Depends(get_session)):
+    # 2번의 쿼리로 N+1 해소
     cats = (await session.execute(
         select(CareerCategory).where(CareerCategory.is_active == True).order_by(CareerCategory.order)
     )).scalars().all()
 
-    result = []
-    for cat in cats:
-        items = (await session.execute(
-            select(CareerItem)
-            .where(CareerItem.category_id == cat.id, CareerItem.is_active == True)
-            .order_by(CareerItem.order)
-        )).scalars().all()
-        result.append({
-            "id": cat.id,
-            "name": cat.name,
-            "items": [{"id": item.id, "name": item.name} for item in items],
-        })
-    return result
+    all_items = (await session.execute(
+        select(CareerItem).where(CareerItem.is_active == True).order_by(CareerItem.category_id, CareerItem.order)
+    )).scalars().all()
+
+    items_by_cat: dict = defaultdict(list)
+    for item in all_items:
+        items_by_cat[item.category_id].append({"id": item.id, "name": item.name})
+
+    return [
+        {"id": cat.id, "name": cat.name, "items": items_by_cat[cat.id]}
+        for cat in cats
+    ]
 
 
 # ── 내 프로필 전체 조회 ────────────────────────
@@ -95,20 +102,16 @@ async def get_profile(
 
     album_section = None
     if album_sec:
-        def row_to_dict(row):
-            d = {c.name: getattr(row, c.name) for c in row.__table__.columns}
-            return d
-
         yt = (await session.execute(select(YoutubeCard).where(YoutubeCard.album_section_id == album_sec.id).order_by(YoutubeCard.order))).scalars().all()
         sc = (await session.execute(select(SoundcloudCard).where(SoundcloudCard.album_section_id == album_sec.id).order_by(SoundcloudCard.order))).scalars().all()
         ic = (await session.execute(select(ImageCard).where(ImageCard.album_section_id == album_sec.id).order_by(ImageCard.order))).scalars().all()
         ni = (await session.execute(select(NoImageCard).where(NoImageCard.album_section_id == album_sec.id).order_by(NoImageCard.order))).scalars().all()
 
         album_section = {
-            "youtube_cards": [row_to_dict(r) for r in yt],
-            "soundcloud_cards": [row_to_dict(r) for r in sc],
-            "image_cards": [row_to_dict(r) for r in ic],
-            "no_image_cards": [row_to_dict(r) for r in ni],
+            "youtube_cards": [_row_to_dict(r) for r in yt],
+            "soundcloud_cards": [_row_to_dict(r) for r in sc],
+            "image_cards": [_row_to_dict(r) for r in ic],
+            "no_image_cards": [_row_to_dict(r) for r in ni],
         }
 
     # Text Sections
@@ -351,19 +354,16 @@ async def get_profile_t2(
 
     album_section = None
     if album_sec:
-        def row_to_dict(row):
-            return {c.name: getattr(row, c.name) for c in row.__table__.columns}
-
         yt = (await session.execute(select(T2YoutubeCard).where(T2YoutubeCard.album_section_id == album_sec.id).order_by(T2YoutubeCard.order))).scalars().all()
         sc = (await session.execute(select(T2SoundcloudCard).where(T2SoundcloudCard.album_section_id == album_sec.id).order_by(T2SoundcloudCard.order))).scalars().all()
         ic = (await session.execute(select(T2ImageCard).where(T2ImageCard.album_section_id == album_sec.id).order_by(T2ImageCard.order))).scalars().all()
         ni = (await session.execute(select(T2NoImageCard).where(T2NoImageCard.album_section_id == album_sec.id).order_by(T2NoImageCard.order))).scalars().all()
 
         album_section = {
-            "youtube_cards": [row_to_dict(r) for r in yt],
-            "soundcloud_cards": [row_to_dict(r) for r in sc],
-            "image_cards": [row_to_dict(r) for r in ic],
-            "no_image_cards": [row_to_dict(r) for r in ni],
+            "youtube_cards": [_row_to_dict(r) for r in yt],
+            "soundcloud_cards": [_row_to_dict(r) for r in sc],
+            "image_cards": [_row_to_dict(r) for r in ic],
+            "no_image_cards": [_row_to_dict(r) for r in ni],
         }
 
     # Text Sections

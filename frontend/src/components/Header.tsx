@@ -66,6 +66,13 @@ export default function Header({ user, onSignUp, onLogIn, onLogOut }: HeaderProp
                     <strong>{user.nickname}</strong>님
                   </span>
                   <button
+                    className="border border-white/35 bg-white/10 text-white px-[10px] py-[8px] rounded-[6px] cursor-pointer font-extrabold text-[12px] hover:bg-white/20 transition-colors"
+                    type="button"
+                    onClick={() => navigate("/upgrade")}
+                  >
+                    ✦ Upgrade
+                  </button>
+                  <button
                     className="border border-white/18 bg-white/6 text-white px-[10px] py-[8px] rounded-[6px] cursor-pointer font-extrabold text-[12px] hover:bg-white/12 transition-colors"
                     type="button"
                     onClick={() => navigate("/mypage")}
@@ -186,22 +193,31 @@ export default function Header({ user, onSignUp, onLogIn, onLogOut }: HeaderProp
             {/* 인증 영역 */}
             <div className="px-5 py-4 border-b border-white/10 flex gap-2">
               {user ? (
-                <>
+                <div className="flex flex-col gap-2 w-full">
                   <button
-                    className="flex-1 border border-white/18 bg-white/6 text-white py-[9px] rounded-[6px] cursor-pointer font-extrabold text-[13px] hover:bg-white/12 transition-colors"
+                    className="w-full border border-white/35 bg-white/10 text-white py-[9px] rounded-[6px] cursor-pointer font-extrabold text-[13px] hover:bg-white/20 transition-colors"
                     type="button"
-                    onClick={() => { navigate("/mypage"); closeDrawer(); }}
+                    onClick={() => { navigate("/upgrade"); closeDrawer(); }}
                   >
-                    MyPage
+                    ✦ Upgrade Plan
                   </button>
-                  <button
-                    className="flex-1 border border-white/18 bg-white/6 text-white py-[9px] rounded-[6px] cursor-pointer font-extrabold text-[13px] hover:bg-white/12 transition-colors"
-                    type="button"
-                    onClick={() => { onLogOut(); closeDrawer(); }}
-                  >
-                    LogOut
-                  </button>
-                </>
+                  <div className="flex gap-2">
+                    <button
+                      className="flex-1 border border-white/18 bg-white/6 text-white py-[9px] rounded-[6px] cursor-pointer font-extrabold text-[13px] hover:bg-white/12 transition-colors"
+                      type="button"
+                      onClick={() => { navigate("/mypage"); closeDrawer(); }}
+                    >
+                      MyPage
+                    </button>
+                    <button
+                      className="flex-1 border border-white/18 bg-white/6 text-white py-[9px] rounded-[6px] cursor-pointer font-extrabold text-[13px] hover:bg-white/12 transition-colors"
+                      type="button"
+                      onClick={() => { onLogOut(); closeDrawer(); }}
+                    >
+                      LogOut
+                    </button>
+                  </div>
+                </div>
               ) : (
                 <>
                   <button

@@ -36,6 +36,12 @@ conf = ConnectionConfig(
 
 otp_storage: Dict[str, dict] = {}
 
+def _cleanup_expired_otps() -> None:
+    now = datetime.now()
+    expired = [email for email, data in otp_storage.items() if now > data["expires"]]
+    for email in expired:
+        del otp_storage[email]
+
 # --- Request 모델 ---
 class EmailSignUpRequest(BaseModel):
     nickname: str
@@ -60,6 +66,7 @@ class OtpVerifyRequest(BaseModel):
 
 @router.post("/send-otp")
 async def send_otp(email: EmailStr):
+    _cleanup_expired_otps()
     otp = "".join(random.choices(string.digits, k=6))
     otp_storage[email] = {"otp": otp, "expires": datetime.now() + timedelta(minutes=5)}
     
@@ -87,12 +94,14 @@ async def send_otp(email: EmailStr):
 
 @router.post("/verify-otp")
 async def verify_otp(data: OtpVerifyRequest):
+    _cleanup_expired_otps()
     stored = otp_storage.get(data.email)
     if not stored or stored["otp"] != data.otp:
         raise HTTPException(status_code=400, detail="인증번호가 틀렸거나 만료되었습니다.")
     if datetime.now() > stored["expires"]:
         otp_storage.pop(data.email, None)
         raise HTTPException(status_code=400, detail="인증번호가 만료되었습니다.")
+    otp_storage.pop(data.email, None)  # 인증 성공 후 즉시 삭제 (재사용 방지)
     return {"status": "verified"}
 
 @router.get("/check-nickname")
@@ -136,7 +145,7 @@ async def email_login(data: LoginRequest, session: AsyncSession = Depends(get_se
     result = await session.execute(statement)
     user = result.scalar_one_or_none()
 
-    if not user or not verify_password(data.password, user.password):
+    if not user or not user.is_active or not verify_password(data.password, user.password):
         raise HTTPException(status_code=401, detail="이메일 또는 비밀번호가 틀렸습니다.")
 
     access_token = create_access_token(data={"sub": user.email, "role": user.role.value})
@@ -149,7 +158,7 @@ async def email_login(data: LoginRequest, session: AsyncSession = Depends(get_se
 @router.post("/google")
 async def google_login(data: SocialTokenRequest, session: AsyncSession = Depends(get_session)):
     try:
-        idinfo = id_token.verify_oauth2_token(data.token, requests.Request(), GOOGLE_CLIENT_ID)
+        idinfo = id_token.verify_oauth2_token(data.token, requests.Request(), GOOGLE_CLIENT_ID, clock_skew_in_seconds=30)
         email = idinfo.get('email')
         google_id = idinfo.get('sub')
 

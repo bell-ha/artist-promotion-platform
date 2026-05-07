@@ -16,9 +16,9 @@ DATABASE_URL = os.getenv("DATABASE_URL")
 # pool_recycle:  5분마다 커넥션 강제 갱신
 engine = create_async_engine(
     DATABASE_URL,
-    echo=True,
+    echo=os.getenv("DB_ECHO", "false").lower() == "true",
     pool_pre_ping=True,
-    pool_recycle=300,
+    pool_recycle=240,  # NeonDB 5분 idle timeout보다 1분 일찍 갱신
 )
 
 # 세션 생성기 설정
@@ -70,29 +70,25 @@ async def get_session() -> AsyncGenerator[AsyncSession, None]:
         yield session
 
 
-# 카테고리 초기 데이터 삽입 (이미 존재하면 스킵)
+CATEGORIES = [
+    {"name": "Performer",   "order": 1, "items": ["Vocal", "Musical"]},
+    {"name": "Player",      "order": 2, "items": ["Guitarist", "Pianist", "Drummer", "Bassist", "Orchestrator", "Session Player"]},
+    {"name": "Creator",     "order": 3, "items": ["Composer", "Songwriter", "Beatmaker", "Topliner", "Producer"]},
+    {"name": "Sound",       "order": 4, "items": ["Sound Designer", "Foley Artist", "Audio Designer"]},
+    {"name": "Engineer",    "order": 5, "items": ["Recording Engineer", "Mixing & Mastering Engineer", "Live Engineer", "Broadcast Engineer"]},
+    {"name": "Developer",   "order": 6, "items": ["Frontend Developer", "Backend Developer", "Fullstack Developer"]},
+    {"name": "Visual",      "order": 7, "items": ["Media Artist", "Visual Artist", "Technical Director"]},
+]
+
+# 카테고리 초기 데이터 삽입 — 이미 데이터가 있으면 건너뜀 (재시작 시 유저 데이터 보호)
 async def seed_categories():
     from sqlalchemy.future import select
     from app.models.category import CareerCategory, CareerItem
 
-    CATEGORIES = [
-        {"name": "Performer",   "order": 1, "items": ["Vocal", "Musical"]},
-        {"name": "Player",      "order": 2, "items": ["Guitarist", "Pianist", "Drummer", "Bassist", "Orchestrator", "Session Player"]},
-        {"name": "Creator",     "order": 3, "items": ["Composer", "Songwriter", "Beatmaker", "Topliner", "Producer"]},
-        {"name": "Sound",       "order": 4, "items": ["Sound Designer", "Foley Artist", "Audio Designer"]},
-        {"name": "Engineer",    "order": 5, "items": ["Recording Engineer", "Mixing & Mastering Engineer", "Live Engineer", "Broadcast Engineer"]},
-        {"name": "Developer",   "order": 6, "items": ["Frontend Developer", "Backend Developer", "Fullstack Developer"]},
-        {"name": "Visual",      "order": 7, "items": ["Media Artist", "Visual Artist", "Technical Director"]},
-    ]
-
     async with AsyncSessionLocal() as session:
-        from app.models.category import UserJob
-
-        # 기존 데이터 전체 교체 (user_jobs → career_items → career_categories 순으로 삭제)
-        await session.execute(__import__("sqlalchemy").text("DELETE FROM user_jobs"))
-        await session.execute(__import__("sqlalchemy").text("DELETE FROM career_items"))
-        await session.execute(__import__("sqlalchemy").text("DELETE FROM career_categories"))
-        await session.flush()
+        existing = (await session.execute(select(CareerCategory).limit(1))).scalar_one_or_none()
+        if existing:
+            return
 
         for cat_data in CATEGORIES:
             category = CareerCategory(name=cat_data["name"], order=cat_data["order"])

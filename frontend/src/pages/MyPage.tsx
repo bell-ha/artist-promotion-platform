@@ -1,17 +1,36 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import axios from "axios";
+import { BACKEND_URL } from "../lib/api";
+
+const PLAN_LABEL: Record<string, string> = {
+  free: "Free",
+  standard: "Standard",
+  premium: "Premium",
+};
 
 export default function MyPage() {
   const navigate = useNavigate();
   const [nickname, setNickname] = useState<string>("");
   const [token, setToken] = useState<string>("");
+  const [plan, setPlan] = useState<string>("free");
 
   useEffect(() => {
     const t = localStorage.getItem("token") || "";
     const n = localStorage.getItem("nickname") || "";
     setToken(t);
     setNickname(n);
-    if (!t) navigate("/");
+    if (!t) { navigate("/"); return; }
+
+    axios
+      .get(`${BACKEND_URL}/payment/my-plan`, {
+        headers: { Authorization: `Bearer ${t}` },
+      })
+      .then((res) => {
+        const data = res.data as { plan: string };
+        setPlan(data.plan);
+      })
+      .catch(() => {});
   }, [navigate]);
 
   const handleLogout = () => {
@@ -47,9 +66,20 @@ export default function MyPage() {
         <section className="card">
           <div className="card__head">
             <div className="avatar" />
-            <div>
+            <div style={{ flex: 1 }}>
               <div className="label">Nickname</div>
-              <div className="value">{nickname || "Unknown"}</div>
+              <div className="value" style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                {nickname || "Unknown"}
+                <span style={{
+                  fontSize: "10px", fontWeight: 900, letterSpacing: ".1em",
+                  padding: "3px 9px", borderRadius: "999px",
+                  background: plan === "premium" ? "rgba(255,215,0,.15)" : plan === "standard" ? "rgba(255,255,255,.12)" : "rgba(255,255,255,.07)",
+                  color: plan === "premium" ? "#f5c842" : plan === "standard" ? "rgba(255,255,255,.8)" : "rgba(255,255,255,.4)",
+                  border: plan === "premium" ? "1px solid rgba(245,200,66,.3)" : "1px solid rgba(255,255,255,.14)",
+                }}>
+                  {PLAN_LABEL[plan] ?? "Free"}
+                </span>
+              </div>
             </div>
           </div>
           <div className="divider" />
@@ -77,6 +107,10 @@ export default function MyPage() {
             </button>
             <button className="btn btn--ghost" type="button" onClick={() => navigate("/mypage/profile")}>
               My portfolio
+            </button>
+            <button className="btn btn--ghost" type="button" onClick={() => navigate("/upgrade")}
+              style={{ borderColor: "rgba(255,255,255,.35)" }}>
+              ✦ Upgrade Plan
             </button>
           </div>
         </section>
