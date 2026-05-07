@@ -57,20 +57,17 @@ async def init_db():
             )
         )
 
-# 의존성 주입을 위한 세션 제공 함수
-# NeonDB가 커넥션을 끊은 경우 최대 3회 재시도 (0.5s → 1s 딜레이)
+        # ALTER TABLE DEFAULT 'free'(소문자)로 삽입된 기존 데이터를 SQLAlchemy enum 이름(대문자)으로 통일
+        await conn.execute(
+            __import__("sqlalchemy").text(
+                "UPDATE users SET subscription_plan = UPPER(subscription_plan) "
+                "WHERE subscription_plan IN ('free', 'standard', 'premium')"
+            )
+        )
+
 async def get_session() -> AsyncGenerator[AsyncSession, None]:
-    last_exc = None
-    for attempt in range(3):
-        try:
-            async with AsyncSessionLocal() as session:
-                yield session
-                return
-        except Exception as e:
-            last_exc = e
-            if attempt < 2:
-                await asyncio.sleep(0.5 * (attempt + 1))
-    raise last_exc
+    async with AsyncSessionLocal() as session:
+        yield session
 
 
 # 카테고리 초기 데이터 삽입 (이미 존재하면 스킵)

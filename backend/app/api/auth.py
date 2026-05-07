@@ -15,7 +15,8 @@ from fastapi_mail import FastMail, MessageSchema, ConnectionConfig
 
 from app.database import get_session
 from app.models.user import User, UserRole, LoginProvider
-from app.core.security import create_access_token, get_password_hash, verify_password 
+from app.core.security import create_access_token, get_password_hash, verify_password
+from app.core.deps import get_current_user
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
 
@@ -49,7 +50,6 @@ class SocialTokenRequest(BaseModel):
     token: str
 
 class NicknameUpdateRequest(BaseModel):
-    email: str
     nickname: str
 
 class OtpVerifyRequest(BaseModel):
@@ -87,8 +87,12 @@ async def send_otp(email: EmailStr):
 
 @router.post("/verify-otp")
 async def verify_otp(data: OtpVerifyRequest):
-    if data.email not in otp_storage or otp_storage[data.email]["otp"] != data.otp:
+    stored = otp_storage.get(data.email)
+    if not stored or stored["otp"] != data.otp:
         raise HTTPException(status_code=400, detail="인증번호가 틀렸거나 만료되었습니다.")
+    if datetime.now() > stored["expires"]:
+        otp_storage.pop(data.email, None)
+        raise HTTPException(status_code=400, detail="인증번호가 만료되었습니다.")
     return {"status": "verified"}
 
 @router.get("/check-nickname")
@@ -100,10 +104,18 @@ async def check_nickname(nickname: str, session: AsyncSession = Depends(get_sess
 
 @router.post("/signup")
 async def email_signup(data: EmailSignUpRequest, session: AsyncSession = Depends(get_session)):
+    if len(data.password) < 6:
+        raise HTTPException(status_code=400, detail="비밀번호는 6자 이상이어야 합니다.")
+
     email_stmt = select(User).where(User.email == data.email)
     email_res = await session.execute(email_stmt)
     if email_res.scalar_one_or_none():
         raise HTTPException(status_code=400, detail="이미 가입된 이메일입니다.")
+
+    nick_stmt = select(User).where(User.nickname == data.nickname)
+    nick_res = await session.execute(nick_stmt)
+    if nick_res.scalar_one_or_none():
+        raise HTTPException(status_code=400, detail="이미 사용 중인 닉네임입니다.")
 
     new_user = User(
         email=data.email,
@@ -170,19 +182,18 @@ async def google_login(data: SocialTokenRequest, session: AsyncSession = Depends
             "email": user.email,
             "is_new_user": is_new_user
         }
+    except ValueError:
+        raise HTTPException(status_code=400, detail="유효하지 않은 구글 토큰입니다.")
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 @router.post("/update-nickname")
-async def update_nickname(data: NicknameUpdateRequest, session: AsyncSession = Depends(get_session)):
-    statement = select(User).where(User.email == data.email)
-    result = await session.execute(statement)
-    user = result.scalar_one_or_none()
-    
-    if not user:
-        raise HTTPException(status_code=404, detail="유저를 찾을 수 없습니다.")
-    
-    user.nickname = data.nickname
-    session.add(user)
+async def update_nickname(
+    data: NicknameUpdateRequest,
+    session: AsyncSession = Depends(get_session),
+    current_user: User = Depends(get_current_user),
+):
+    current_user.nickname = data.nickname
+    session.add(current_user)
     await session.commit()
     return {"status": "success"}

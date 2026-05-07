@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { GoogleLogin } from "@react-oauth/google";
 import type { CredentialResponse } from "@react-oauth/google";
 import axios from "axios";
@@ -8,6 +8,10 @@ import type { AuthModalsProps } from "../types/auth";
 export default function AuthModals({ isOpen, mode, onClose, onModeChange, onLoginSuccess }: AuthModalsProps) {
   const [userEmail, setUserEmail] = useState("");
   const [userPw, setUserPw] = useState("");
+  const [confirmPw, setConfirmPw] = useState("");
+  const [showSignInPw, setShowSignInPw] = useState(false);
+  const [showSignUpPw, setShowSignUpPw] = useState(false);
+  const [showConfirmPw, setShowConfirmPw] = useState(false);
 
   const [newNickname, setNewNickname] = useState("");
   const [isNicknameAvailable, setIsNicknameAvailable] = useState(false);
@@ -15,27 +19,48 @@ export default function AuthModals({ isOpen, mode, onClose, onModeChange, onLogi
   const [otp, setOtp] = useState("");
   const [isOtpSent, setIsOtpSent] = useState(false);
   const [isEmailVerified, setIsEmailVerified] = useState(false);
+  const [otpTimer, setOtpTimer] = useState(0);
 
   // Forgot Password
   const [fpEmail, setFpEmail] = useState("");
   const [fpOtp, setFpOtp] = useState("");
   const [fpNewPw, setFpNewPw] = useState("");
+  const [fpConfirmPw, setFpConfirmPw] = useState("");
   const [fpOtpSent, setFpOtpSent] = useState(false);
   const [fpVerified, setFpVerified] = useState(false);
   const [fpBusy, setFpBusy] = useState(false);
+  const [showFpNewPw, setShowFpNewPw] = useState(false);
+  const [showFpConfirmPw, setShowFpConfirmPw] = useState(false);
+  const [fpOtpTimer, setFpOtpTimer] = useState(0);
 
   // Google OAuth 신규 유저 닉네임
   const [isNicknameModalOpen, setIsNicknameModalOpen] = useState(false);
   const [googleEmail, setGoogleEmail] = useState("");
+
+  // OTP countdown (signup)
+  useEffect(() => {
+    if (otpTimer <= 0) return;
+    const id = setTimeout(() => setOtpTimer(t => t - 1), 1000);
+    return () => clearTimeout(id);
+  }, [otpTimer]);
+
+  // OTP countdown (forgot password)
+  useEffect(() => {
+    if (fpOtpTimer <= 0) return;
+    const id = setTimeout(() => setFpOtpTimer(t => t - 1), 1000);
+    return () => clearTimeout(id);
+  }, [fpOtpTimer]);
 
   const handleClose = () => {
     onClose();
     setFpEmail("");
     setFpOtp("");
     setFpNewPw("");
+    setFpConfirmPw("");
     setFpOtpSent(false);
     setFpVerified(false);
     setFpBusy(false);
+    setFpOtpTimer(0);
   };
 
   const handleGoogleSuccess = async (credentialResponse: CredentialResponse) => {
@@ -82,10 +107,12 @@ export default function AuthModals({ isOpen, mode, onClose, onModeChange, onLogi
   const handleUpdateNickname = async () => {
     if (!isNicknameAvailable) return alert("닉네임 중복 확인을 해주세요.");
     try {
-      await axios.post(`${BACKEND_URL}/auth/update-nickname`, {
-        email: googleEmail,
-        nickname: newNickname,
-      });
+      const token = localStorage.getItem("token");
+      await axios.post(
+        `${BACKEND_URL}/auth/update-nickname`,
+        { nickname: newNickname },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
       localStorage.setItem("nickname", newNickname);
       alert("닉네임 설정이 완료되었습니다!");
       window.location.reload();
@@ -112,10 +139,16 @@ export default function AuthModals({ isOpen, mode, onClose, onModeChange, onLogi
     }
   };
 
+  const isValidEmail = (email: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+
   const handleSendOtp = async () => {
+    if (!isValidEmail(userEmail)) return alert("올바른 이메일 형식을 입력해주세요.");
     try {
       await axios.post(`${BACKEND_URL}/auth/send-otp?email=${encodeURIComponent(userEmail)}`);
       setIsOtpSent(true);
+      setIsEmailVerified(false);
+      setOtp("");
+      setOtpTimer(300);
       alert("인증번호 발송 완료");
     } catch {
       alert("발송 실패");
@@ -128,37 +161,55 @@ export default function AuthModals({ isOpen, mode, onClose, onModeChange, onLogi
       const data = res.data as { status: string };
       if (data.status === "verified") {
         setIsEmailVerified(true);
+        setOtpTimer(0);
         alert("인증 성공");
       }
-    } catch {
-      alert("인증번호 오류");
+    } catch (e) {
+      const err = e as { response?: { data?: { detail?: string } } };
+      alert(err.response?.data?.detail || "인증번호 오류");
     }
   };
 
   const handleSignUp = async () => {
+    if (userPw.length < 6) return alert("비밀번호는 6자 이상이어야 합니다.");
+    if (userPw !== confirmPw) return alert("비밀번호가 일치하지 않습니다.");
     try {
       await axios.post(`${BACKEND_URL}/auth/signup`, {
         nickname: newNickname,
         email: userEmail,
         password: userPw,
       });
-      alert("가입 성공!");
+      alert("가입 성공! 로그인해주세요.");
+      setUserEmail("");
+      setUserPw("");
+      setConfirmPw("");
+      setNewNickname("");
+      setIsNicknameAvailable(false);
+      setOtp("");
+      setIsOtpSent(false);
+      setIsEmailVerified(false);
+      setOtpTimer(0);
       onModeChange("signin");
-    } catch {
-      alert("가입 실패");
+    } catch (e) {
+      const err = e as { response?: { data?: { detail?: string } } };
+      alert("가입 실패: " + (err.response?.data?.detail || "알 수 없는 오류"));
     }
   };
 
   const fpSendOtp = async () => {
     if (!fpEmail) return alert("이메일을 입력해주세요.");
+    if (!isValidEmail(fpEmail)) return alert("올바른 이메일 형식을 입력해주세요.");
     setFpBusy(true);
     try {
       await axios.post(FORGOT_API.sendOtp(fpEmail));
       setFpOtpSent(true);
+      setFpOtpTimer(300);
+      setFpOtp("");
+      setFpVerified(false);
       alert("비밀번호 재설정 인증코드를 발송했습니다.");
     } catch (e) {
       const err = e as { response?: { data?: { detail?: string } } };
-      alert("발송 실패: " + (err.response?.data?.detail || "API 경로를 확인하세요."));
+      alert("발송 실패: " + (err.response?.data?.detail || "오류가 발생했습니다."));
     } finally {
       setFpBusy(false);
     }
@@ -173,13 +224,14 @@ export default function AuthModals({ isOpen, mode, onClose, onModeChange, onLogi
       const ok = data?.status === "verified" || data?.verified === true;
       if (ok) {
         setFpVerified(true);
+        setFpOtpTimer(0);
         alert("인증 성공");
       } else {
         alert("인증 실패");
       }
     } catch (e) {
       const err = e as { response?: { data?: { detail?: string } } };
-      alert("인증 실패: " + (err.response?.data?.detail || "API 경로를 확인하세요."));
+      alert("인증 실패: " + (err.response?.data?.detail || "오류가 발생했습니다."));
     } finally {
       setFpBusy(false);
     }
@@ -188,6 +240,7 @@ export default function AuthModals({ isOpen, mode, onClose, onModeChange, onLogi
   const fpResetPassword = async () => {
     if (!fpVerified) return alert("먼저 인증을 완료해주세요.");
     if (!fpNewPw || fpNewPw.length < 6) return alert("새 비밀번호를 6자 이상 입력해주세요.");
+    if (fpNewPw !== fpConfirmPw) return alert("비밀번호가 일치하지 않습니다.");
     setFpBusy(true);
     try {
       await axios.post(FORGOT_API.resetPassword(), { email: fpEmail, otp: fpOtp, new_password: fpNewPw });
@@ -195,15 +248,21 @@ export default function AuthModals({ isOpen, mode, onClose, onModeChange, onLogi
       onModeChange("signin");
       setUserEmail(fpEmail);
       setUserPw("");
-      setFpEmail(""); setFpOtp(""); setFpNewPw("");
-      setFpOtpSent(false); setFpVerified(false);
+      setFpEmail(""); setFpOtp(""); setFpNewPw(""); setFpConfirmPw("");
+      setFpOtpSent(false); setFpVerified(false); setFpOtpTimer(0);
     } catch (e) {
       const err = e as { response?: { data?: { detail?: string } } };
-      alert("변경 실패: " + (err.response?.data?.detail || "API 경로를 확인하세요."));
+      alert("변경 실패: " + (err.response?.data?.detail || "오류가 발생했습니다."));
     } finally {
       setFpBusy(false);
     }
   };
+
+  const formatTimer = (secs: number) =>
+    secs <= 0 ? "만료됨" : `${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, "0")}`;
+
+  // googleEmail is stored for reference but nickname update now uses the JWT token
+  void googleEmail;
 
   if (!isOpen && !isNicknameModalOpen) return null;
 
@@ -214,7 +273,7 @@ export default function AuthModals({ isOpen, mode, onClose, onModeChange, onLogi
         <div
           className="fixed inset-0 z-[1000] flex items-center justify-center p-4"
           style={{ background: "rgba(0,0,0,.45)", backdropFilter: "blur(10px)" }}
-          onClick={handleClose}
+          onMouseDown={(e) => { if (e.target === e.currentTarget) handleClose(); }}
         >
           <div
             className="relative w-[min(520px,92vw)] p-[26px] rounded-[18px] border border-white/20"
@@ -251,8 +310,19 @@ export default function AuthModals({ isOpen, mode, onClose, onModeChange, onLogi
                       onChange={(e) => setUserEmail(e.target.value)} placeholder="example@email.com" />
                   </Field>
                   <Field label="Password">
-                    <input className={inputCls} type="password" value={userPw}
-                      onChange={(e) => setUserPw(e.target.value)} placeholder="••••••••" />
+                    <div className="relative">
+                      <input
+                        className={inputPwCls}
+                        type={showSignInPw ? "text" : "password"}
+                        value={userPw}
+                        onChange={(e) => setUserPw(e.target.value)}
+                        onKeyDown={(e) => e.key === "Enter" && handleSignIn()}
+                        placeholder="••••••••"
+                      />
+                      <button type="button" className={eyeBtnCls} onClick={() => setShowSignInPw(s => !s)}>
+                        {showSignInPw ? "숨기기" : "보기"}
+                      </button>
+                    </div>
                   </Field>
                   <button className={btnBlockCls} type="button" onClick={handleSignIn}>Log In</button>
                   <div className="mt-[10px] flex justify-between items-center">
@@ -288,7 +358,14 @@ export default function AuthModals({ isOpen, mode, onClose, onModeChange, onLogi
                   <Field label="E-mail">
                     <div className="flex gap-2 items-center">
                       <input className={inputCls} type="email" value={userEmail}
-                        onChange={(e) => setUserEmail(e.target.value)} placeholder="example@email.com" />
+                        onChange={(e) => {
+                          setUserEmail(e.target.value);
+                          setIsOtpSent(false);
+                          setIsEmailVerified(false);
+                          setOtp("");
+                          setOtpTimer(0);
+                        }}
+                        placeholder="example@email.com" />
                       <button className={miniBtnCls} type="button" onClick={handleSendOtp}>인증발송</button>
                     </div>
                   </Field>
@@ -299,17 +376,46 @@ export default function AuthModals({ isOpen, mode, onClose, onModeChange, onLogi
                           onChange={(e) => setOtp(e.target.value)} placeholder="인증번호" />
                         <button className={miniBtnCls} type="button" onClick={handleVerifyOtp}>확인</button>
                       </div>
-                      <div className={`mt-[6px] text-[10px] ${isEmailVerified ? "text-green-600 font-bold" : "text-black/45"}`}>
-                        {isEmailVerified ? "이메일 인증 완료" : "인증번호 확인을 완료해주세요."}
+                      <div className="mt-[6px] flex justify-between items-center">
+                        <div className={`text-[10px] ${isEmailVerified ? "text-green-600 font-bold" : "text-black/45"}`}>
+                          {isEmailVerified ? "이메일 인증 완료" : "인증번호 확인을 완료해주세요."}
+                        </div>
+                        {!isEmailVerified && (
+                          <div className={`text-[10px] font-bold ${otpTimer <= 60 && otpTimer > 0 ? "text-red-500" : otpTimer === 0 ? "text-red-600" : "text-black/45"}`}>
+                            {formatTimer(otpTimer)}
+                          </div>
+                        )}
                       </div>
                     </Field>
                   )}
                   <Field label="Password">
-                    <input className={inputCls} type="password" value={userPw}
-                      onChange={(e) => setUserPw(e.target.value)} placeholder="••••••••" />
+                    <div className="relative">
+                      <input className={inputPwCls} type={showSignUpPw ? "text" : "password"} value={userPw}
+                        onChange={(e) => setUserPw(e.target.value)} placeholder="••••••••" />
+                      <button type="button" className={eyeBtnCls} onClick={() => setShowSignUpPw(s => !s)}>
+                        {showSignUpPw ? "숨기기" : "보기"}
+                      </button>
+                    </div>
+                    <div className={`mt-[6px] text-[10px] ${userPw.length > 0 && userPw.length < 6 ? "text-red-500 font-bold" : "text-black/45"}`}>
+                      6자 이상 입력해주세요.
+                    </div>
+                  </Field>
+                  <Field label="Confirm Password">
+                    <div className="relative">
+                      <input className={inputPwCls} type={showConfirmPw ? "text" : "password"} value={confirmPw}
+                        onChange={(e) => setConfirmPw(e.target.value)} placeholder="••••••••" />
+                      <button type="button" className={eyeBtnCls} onClick={() => setShowConfirmPw(s => !s)}>
+                        {showConfirmPw ? "숨기기" : "보기"}
+                      </button>
+                    </div>
+                    {confirmPw.length > 0 && (
+                      <div className={`mt-[6px] text-[10px] font-bold ${userPw === confirmPw ? "text-green-600" : "text-red-500"}`}>
+                        {userPw === confirmPw ? "비밀번호가 일치합니다." : "비밀번호가 일치하지 않습니다."}
+                      </div>
+                    )}
                   </Field>
                   <button className={btnBlockCls} type="button" onClick={handleSignUp}
-                    disabled={!(isEmailVerified && isNicknameAvailable)}>
+                    disabled={!(isEmailVerified && isNicknameAvailable && userPw.length >= 6 && userPw === confirmPw)}>
                     Sign up!
                   </button>
                   <div className="mt-[10px] flex justify-between items-center">
@@ -339,14 +445,41 @@ export default function AuthModals({ isOpen, mode, onClose, onModeChange, onLogi
                             onChange={(e) => setFpOtp(e.target.value)} placeholder="인증코드" />
                           <button className={miniBtnCls} type="button" onClick={fpVerifyOtp} disabled={fpBusy}>확인</button>
                         </div>
-                        <div className={`mt-[6px] text-[10px] ${fpVerified ? "text-green-600 font-bold" : "text-black/45"}`}>
-                          {fpVerified ? "인증 완료" : "인증코드를 확인해주세요."}
+                        <div className="mt-[6px] flex justify-between items-center">
+                          <div className={`text-[10px] ${fpVerified ? "text-green-600 font-bold" : "text-black/45"}`}>
+                            {fpVerified ? "인증 완료" : "인증코드를 확인해주세요."}
+                          </div>
+                          {!fpVerified && (
+                            <div className={`text-[10px] font-bold ${fpOtpTimer <= 60 && fpOtpTimer > 0 ? "text-red-500" : fpOtpTimer === 0 ? "text-red-600" : "text-black/45"}`}>
+                              {formatTimer(fpOtpTimer)}
+                            </div>
+                          )}
                         </div>
                       </Field>
                       <Field label="New Password">
-                        <input className={inputCls} type="password" value={fpNewPw}
-                          onChange={(e) => setFpNewPw(e.target.value)}
-                          placeholder="새 비밀번호(6자 이상)" disabled={!fpVerified} />
+                        <div className="relative">
+                          <input className={inputPwCls} type={showFpNewPw ? "text" : "password"} value={fpNewPw}
+                            onChange={(e) => setFpNewPw(e.target.value)}
+                            placeholder="새 비밀번호(6자 이상)" disabled={!fpVerified} />
+                          <button type="button" className={eyeBtnCls} onClick={() => setShowFpNewPw(s => !s)} disabled={!fpVerified}>
+                            {showFpNewPw ? "숨기기" : "보기"}
+                          </button>
+                        </div>
+                      </Field>
+                      <Field label="Confirm New Password">
+                        <div className="relative">
+                          <input className={inputPwCls} type={showFpConfirmPw ? "text" : "password"} value={fpConfirmPw}
+                            onChange={(e) => setFpConfirmPw(e.target.value)}
+                            placeholder="비밀번호 확인" disabled={!fpVerified} />
+                          <button type="button" className={eyeBtnCls} onClick={() => setShowFpConfirmPw(s => !s)} disabled={!fpVerified}>
+                            {showFpConfirmPw ? "숨기기" : "보기"}
+                          </button>
+                        </div>
+                        {fpConfirmPw.length > 0 && (
+                          <div className={`mt-[6px] text-[10px] font-bold ${fpNewPw === fpConfirmPw ? "text-green-600" : "text-red-500"}`}>
+                            {fpNewPw === fpConfirmPw ? "비밀번호가 일치합니다." : "비밀번호가 일치하지 않습니다."}
+                          </div>
+                        )}
                       </Field>
                       <button className={btnBlockCls} type="button" onClick={fpResetPassword}
                         disabled={!fpVerified || fpBusy}>
@@ -359,10 +492,6 @@ export default function AuthModals({ isOpen, mode, onClose, onModeChange, onLogi
                       Back to login
                     </button>
                     <span />
-                  </div>
-                  <div className="mt-[12px] text-[10px] text-black/50 leading-[1.45]">
-                    * 발송 실패/인증 실패 시 백엔드의 실제 엔드포인트와 다를 수 있어요.
-                    <br />그 경우 <b>lib/api.ts</b>의 FORGOT_API 경로만 맞춰주세요.
                   </div>
                 </>
               )}
@@ -440,6 +569,8 @@ function Divider() {
 }
 
 const inputCls = "w-full border border-black/12 rounded-[10px] px-[12px] py-[12px] outline-none bg-[rgba(240,240,240,.9)] text-[13px]";
+const inputPwCls = "w-full border border-black/12 rounded-[10px] pl-[12px] pr-[52px] py-[12px] outline-none bg-[rgba(240,240,240,.9)] text-[13px]";
+const eyeBtnCls = "absolute right-[10px] top-1/2 -translate-y-1/2 text-[11px] font-bold text-black/50 cursor-pointer bg-transparent border-none p-0 disabled:opacity-40";
 const miniBtnCls = "flex-none border border-black/18 bg-white/90 rounded-[10px] px-[12px] py-[10px] cursor-pointer font-black text-[11px]";
 const btnBlockCls = "w-full mt-[6px] border-none bg-[#111] text-white rounded-[10px] px-[12px] py-[12px] cursor-pointer font-black tracking-[.02em] disabled:bg-black/25 disabled:cursor-not-allowed";
 const linkBtnCls = "border-none bg-transparent cursor-pointer text-[11px] font-extrabold text-black/62 underline";
