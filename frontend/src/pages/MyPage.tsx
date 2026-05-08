@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { BACKEND_URL } from "../lib/api";
+import { useAuthGuard } from "../hooks/useAuthGuard";
 
 const PLAN_LABEL: Record<string, string> = {
   free: "Free",
@@ -10,6 +11,7 @@ const PLAN_LABEL: Record<string, string> = {
 };
 
 export default function MyPage() {
+  useAuthGuard();
   const navigate = useNavigate();
   const [nickname, setNickname] = useState<string>("");
   const [token, setToken] = useState<string>("");

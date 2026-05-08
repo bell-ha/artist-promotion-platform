@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { BACKEND_URL } from "../lib/api";
+import { useAuthGuard } from "../hooks/useAuthGuard";
 
 // ── Types ──────────────────────────────────────────────────────────────────
 interface CareerItem { id: number; name: string; }
@@ -158,6 +159,7 @@ function CommonFields<T extends CommonCardFields>({ card, update }: { card: T; u
 
 // ── Main Component ─────────────────────────────────────────────────────────
 export default function EditProfile() {
+  useAuthGuard();
   const navigate = useNavigate();
   const token = localStorage.getItem("token") || "";
   const headers = { Authorization: `Bearer ${token}` };

@@ -30,16 +30,54 @@ body {
 }
 
 @keyframes floatNewUp {
-  from {
-    transform: translateY(0px);
-  }
-  to {
-    transform: translateY(-18px);
-  }
+  from { transform: translateY(0px); }
+  to   { transform: translateY(-18px); }
 }
-
 .new-float-trigger {
   animation: floatNewUp 1.2s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+/* ── 페이지 전환 ── */
+@keyframes pageFadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.page-transition {
+  animation: pageFadeIn 0.28s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* ── 마이크로 인터랙션 ── */
+
+/* 버튼 클릭 시 살짝 눌리는 느낌 */
+button:not([disabled]) {
+  transition: transform 120ms ease, opacity 120ms ease, background-color 150ms ease, color 150ms ease, border-color 150ms ease;
+}
+button:not([disabled]):active {
+  transform: scale(0.96);
+}
+
+/* 카드 hover lift */
+.card-hover {
+  transition: transform 200ms ease, box-shadow 200ms ease;
+  cursor: pointer;
+}
+.card-hover:hover {
+  transform: translateY(-3px);
+}
+
+/* 링크형 텍스트 hover */
+.link-hover {
+  transition: opacity 150ms ease;
+}
+.link-hover:hover {
+  opacity: 0.7;
+}
+
+/* input focus 부드러운 글로우 */
+input:not([disabled]):focus,
+textarea:not([disabled]):focus {
+  transition: box-shadow 150ms ease;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.15);
 }
 
 /* 그라디언트 유틸리티 클래스 */

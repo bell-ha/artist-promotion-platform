@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import { BACKEND_URL } from "../lib/api";
+import { useAuthGuard } from "../hooks/useAuthGuard";
 
 type PlanId = "free" | "standard" | "premium";
 
@@ -64,6 +65,7 @@ const PLANS: PlanDef[] = [
 const PLAN_ORDER: PlanId[] = ["free", "standard", "premium"];
 
 export default function Upgrade() {
+  useAuthGuard();
   const navigate = useNavigate();
   const [currentPlan, setCurrentPlan] = useState<PlanId>("free");
   const [loading, setLoading] = useState(true);

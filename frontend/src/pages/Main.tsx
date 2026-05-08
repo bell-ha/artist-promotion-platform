@@ -7,6 +7,7 @@ import SpotlightAlbum from "../components/SpotlightAlbum";
 import CTASection from "../components/CTASection";
 import AuthModals from "../components/AuthModals";
 import type { User, AuthMode } from "../types/auth";
+import { isTokenExpired, clearSession } from "../lib/token";
 
 export default function Main() {
   const [user, setUser] = useState<User | null>(null);
@@ -16,12 +17,16 @@ export default function Main() {
   const location = useLocation();
   const navigate = useNavigate();
 
-  // 로그인 세션 복원
+  // 로그인 세션 복원 (만료된 토큰은 자동 정리)
   useEffect(() => {
     const token = localStorage.getItem("token");
     const nickname = localStorage.getItem("nickname");
     if (token && nickname && !nickname.startsWith("User_")) {
-      setUser({ nickname });
+      if (isTokenExpired(token)) {
+        clearSession();
+      } else {
+        setUser({ nickname });
+      }
     }
   }, []);
 
