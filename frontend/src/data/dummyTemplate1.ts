@@ -6,9 +6,10 @@ export const dummyTemplate1: Template1Data = {
   name_section: {
     name: "함태영",
     english_name: "Ham Taeyoung",
-    description1: "Music Producer / Artist",
+    tagline: "Music Producer / Artist",
+    description1: "장면에 최적화된 사운드를 설계합니다",
     description2:
-      "작곡가, 편곡가, 프로듀서로서 다양한 장르와 프로젝트에 참여해왔습니다. 음악을 통해 감동을 전달하고, 창의적인 협업을 추구합니다.",
+      "새로운 경험을 느끼는 것이 가장 중요하다고 생각합니다.\n소리 뿐만 아니라 시각적으로 융합되어 새로운 경험을 느끼는 것을 지향합니다.\n한 장면을 인식하여 그때의 분위기가 생각나는 것 처럼 모든 음악이 그때의 분위기와 장면을 생각나게 만드는 음악을 합니다.",
     thumbnail_url: "/src/assets/images/template1_thumbnail.png",
   },
 
@@ -17,28 +18,28 @@ export const dummyTemplate1: Template1Data = {
       {
         type: "youtube",
         order: 0,
-        link: "https://www.youtube.com/embed/dQw4w9WgXcQ",
+        link: "https://youtu.be/Y8JFxS1HlDo?si=A4er9toO9-6EzWYA",
         project_title: "FEATURED WORK 01",
-        project_subtitle: "대한민국 대마 동요 프로젝트",
+        project_subtitle: "대한민국 테마 동요 프로젝트",
         album_name: "Album name",
         composer: "Composer / Arranger",
-        category_desc: "",
-        year: 2024,
+        category_desc: "Indie",
+        year: 2026,
         description:
-          "1980년대부터 활동을 시작하여 지금까지 수많은 히트곡을 만들어온 프로듀서. 이 작품은 어린이들을 위한 동요 프로젝트로, 밝고 따뜻한 멜로디로 구성되어 있습니다.",
+          "대한민국을 주제로 한 아동용 동요 제작 프로젝트.\n쉬운 멜로디와 안정적인 템포를 기반으로, 전통 악기 활용 버전을 포함한 다변화 편곡 진행.",
       },
       {
         type: "soundcloud",
         order: 1,
         link: "https://soundcloud.com/ohyeahtv/ohi-away",
         project_title: "DISCOGRAPHY · PROJECT HISTORY 01",
-        project_subtitle: "함태영",
+        project_subtitle: "참여 앨범",
         album_name: "Album name",
         composer: "Composer / Arranger",
-        category_desc: "",
+        category_desc: "Indie",
         year: 2023,
         description:
-          "1990년대를 풍미했던 감성적인 발라드 모음집. 시대를 초월한 멜로디와 서정적인 가사가 인상적인 작품입니다.",
+          "대한민국을 주제로 한 아동용 동요 제작 프로젝트.\n쉬운 멜로디와 안정적인 템포를 기반으로, 전통 악기 활용 버전을 포함한 다변화 편곡 진행.",
       },
       {
         type: "image",
@@ -47,13 +48,13 @@ export const dummyTemplate1: Template1Data = {
           "https://images.unsplash.com/photo-1511379938547-c1f69419868d?w=600&q=80",
         hyperlink: "https://music.example.com/album",
         project_title: "DISCOGRAPHY · PROJECT HISTORY 02",
-        project_subtitle: "함태영",
-        album_name: "Kids Songs Philippines",
+        project_subtitle: "참여앨범",
+        album_name: "Album name",
         composer: "Composer / Arranger",
-        category_desc: "",
+        category_desc: "Indie",
         year: 2022,
         description:
-          "필리핀 어린이들을 위해 제작된 동요 앨범. 필리핀 전통 음악 요소와 현대적 감성을 결합한 작품입니다.",
+          "대한민국을 주제로 한 아동용 동요 제작 프로젝트.\n쉬운 멜로디와 안정적인 템포를 기반으로, 전통 악기 활용 버전을 포함한 다변화 편곡 진행.",
       },
       {
         type: "no_image",
@@ -65,7 +66,7 @@ export const dummyTemplate1: Template1Data = {
         category_desc: "",
         year: 2021,
         description:
-          "YouTube 콘텐츠를 위해 제작된 앰비언트 작품 모음. 자연의 소리와 전자음악을 융합하여 차분하고 몰입감 있는 분위기를 연출했습니다.",
+          "Max/MSP를 활용한 사운드 디자인 기반의 앰비언트 음악 제작 및 발매",
       },
     ],
   },

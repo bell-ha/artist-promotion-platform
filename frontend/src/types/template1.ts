@@ -5,6 +5,7 @@
 export interface T1NameSection {
   name: string;
   english_name: string;
+  tagline?: string;
   description1?: string;
   description2?: string;
   thumbnail_url?: string;
