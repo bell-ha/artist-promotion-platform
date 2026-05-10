@@ -13,6 +13,7 @@ from app.schemas.template1 import (
 class T2NameSectionSave(BaseModel):
     name: Optional[str] = None
     english_name: Optional[str] = None
+    tagline: Optional[str] = None
     description1: Optional[str] = None
     description2: Optional[str] = None
     thumbnail_url: Optional[str] = None

@@ -10,17 +10,18 @@ interface CareerCategory { id: number; name: string; items: CareerItem[]; }
 
 interface NameData {
   name: string; english_name: string;
+  tagline: string;
   description1: string; description2: string;
   thumbnail_url: string;
   career_item_ids: number[];
 }
 const emptyName = (): NameData => ({
-  name: "", english_name: "", description1: "", description2: "", thumbnail_url: "", career_item_ids: [],
+  name: "", english_name: "", tagline: "", description1: "", description2: "", thumbnail_url: "", career_item_ids: [],
 });
 
 interface T2NameData extends NameData { activity_area: string; }
 const emptyT2Name = (): T2NameData => ({
-  name: "", english_name: "", description1: "", description2: "",
+  name: "", english_name: "", tagline: "", description1: "", description2: "",
   thumbnail_url: "", activity_area: "", career_item_ids: [],
 });
 
@@ -174,6 +175,7 @@ export default function EditProfile() {
   const [nameData, setNameData] = useState<NameData>(emptyName());
   const [albumData, setAlbumData] = useState<AlbumData>(emptyAlbum());
   const [textSections, setTextSections] = useState<TextSection[]>([]);
+  const [contactData, setContactData] = useState<ContactData>(emptyContact());
 
   // ── Template 2 state ──────────────────────────
   const [t2NameData, setT2NameData] = useState<T2NameData>(emptyT2Name());
@@ -187,13 +189,14 @@ export default function EditProfile() {
     axios.get(`${BACKEND_URL}/profile/career-items`).then(r => setCategories(r.data)).catch(() => {});
 
     // T1 데이터 로드
-    axios.get(`${BACKEND_URL}/profile/me`, { headers }).then(r => {
+    axios.get(`${BACKEND_URL}/profile/me/t1`, { headers }).then(r => {
       const d = r.data;
       if (d.active_template) setActiveTemplate(d.active_template as 1 | 2 | 3);
       if (d.name_section) {
         setNameData({
           name: d.name_section.name ?? "",
           english_name: d.name_section.english_name ?? "",
+          tagline: d.name_section.tagline ?? "",
           description1: d.name_section.description1 ?? "",
           description2: d.name_section.description2 ?? "",
           thumbnail_url: d.name_section.thumbnail_url ?? "",
@@ -211,6 +214,19 @@ export default function EditProfile() {
         });
       }
       if (d.text_sections) setTextSections(d.text_sections);
+      if (d.contact_section) {
+        setContactData({
+          phone1: d.contact_section.phone1 ?? "",
+          phone2: d.contact_section.phone2 ?? "",
+          email1: d.contact_section.email1 ?? "",
+          email2: d.contact_section.email2 ?? "",
+          email3: d.contact_section.email3 ?? "",
+          instagram_url: d.contact_section.instagram_url ?? "",
+          tiktok_url: d.contact_section.tiktok_url ?? "",
+          youtube_url: d.contact_section.youtube_url ?? "",
+          extra_description: d.contact_section.extra_description ?? "",
+        });
+      }
     }).catch(() => {});
 
     // T2 데이터 로드
@@ -220,6 +236,7 @@ export default function EditProfile() {
         setT2NameData({
           name: d.name_section.name ?? "",
           english_name: d.name_section.english_name ?? "",
+          tagline: d.name_section.tagline ?? "",
           description1: d.name_section.description1 ?? "",
           description2: d.name_section.description2 ?? "",
           thumbnail_url: d.name_section.thumbnail_url ?? "",
@@ -273,14 +290,15 @@ export default function EditProfile() {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const toNum = (cards: any[]) => cards.map(c => ({ ...c, year: toInt(c.year) }));
       await Promise.all([
-        axios.put(`${BACKEND_URL}/profile/name-section`, nameData, { headers }),
-        axios.put(`${BACKEND_URL}/profile/album-section`, {
+        axios.put(`${BACKEND_URL}/profile/t1/name-section`, nameData, { headers }),
+        axios.put(`${BACKEND_URL}/profile/t1/album-section`, {
           youtube_cards: toNum(albumData.youtube_cards),
           soundcloud_cards: toNum(albumData.soundcloud_cards),
           image_cards: toNum(albumData.image_cards),
           no_image_cards: toNum(albumData.no_image_cards),
         }, { headers }),
-        axios.put(`${BACKEND_URL}/profile/text-sections`, { sections: textSections }, { headers }),
+        axios.put(`${BACKEND_URL}/profile/t1/text-sections`, { sections: textSections }, { headers }),
+        axios.put(`${BACKEND_URL}/profile/t1/contact-section`, contactData, { headers }),
       ]);
       notify("저장 완료!");
     } catch { notify("저장 실패"); }
@@ -459,6 +477,7 @@ export default function EditProfile() {
                 onUploaded={url => setNameData(p => ({ ...p, thumbnail_url: url }))} {...fileProps} />
               <Input label="이름" value={nameData.name} onChange={v => setNameData(p => ({ ...p, name: v }))} />
               <Input label="영어 이름" value={nameData.english_name} onChange={v => setNameData(p => ({ ...p, english_name: v }))} />
+              <Input label="태그라인 (예: Music Producer / Artist)" value={nameData.tagline} onChange={v => setNameData(p => ({ ...p, tagline: v }))} />
               <Textarea label="설명1" value={nameData.description1} onChange={v => setNameData(p => ({ ...p, description1: v }))} />
               <Textarea label="설명2" value={nameData.description2} onChange={v => setNameData(p => ({ ...p, description2: v }))} />
 
@@ -563,6 +582,20 @@ export default function EditProfile() {
               ))}
             </div>
 
+            {/* ── CONTACT SECTION ──────────────────────── */}
+            <div>
+              <SectionHeader title="Contact Section" />
+              <Input label="전화번호 1" value={contactData.phone1} onChange={v => setContactData(p => ({ ...p, phone1: v }))} />
+              <Input label="전화번호 2" value={contactData.phone2} onChange={v => setContactData(p => ({ ...p, phone2: v }))} />
+              <Input label="이메일 1 (필수)" value={contactData.email1} onChange={v => setContactData(p => ({ ...p, email1: v }))} />
+              <Input label="이메일 2" value={contactData.email2} onChange={v => setContactData(p => ({ ...p, email2: v }))} />
+              <Input label="이메일 3" value={contactData.email3} onChange={v => setContactData(p => ({ ...p, email3: v }))} />
+              <Input label="Instagram URL" value={contactData.instagram_url} onChange={v => setContactData(p => ({ ...p, instagram_url: v }))} />
+              <Input label="TikTok URL" value={contactData.tiktok_url} onChange={v => setContactData(p => ({ ...p, tiktok_url: v }))} />
+              <Input label="YouTube URL" value={contactData.youtube_url} onChange={v => setContactData(p => ({ ...p, youtube_url: v }))} />
+              <Textarea label="추가 설명" value={contactData.extra_description} onChange={v => setContactData(p => ({ ...p, extra_description: v }))} />
+            </div>
+
             <button
               style={{ ...s.btnPrimary, width: "100%", padding: "14px", fontSize: 15, opacity: (saving || uploading) ? 0.6 : 1 }}
               disabled={saving || uploading}
@@ -584,6 +617,7 @@ export default function EditProfile() {
                 onUploaded={url => setT2NameData(p => ({ ...p, thumbnail_url: url }))} {...fileProps} />
               <Input label="이름" value={t2NameData.name} onChange={v => setT2NameData(p => ({ ...p, name: v }))} />
               <Input label="영어 이름" value={t2NameData.english_name} onChange={v => setT2NameData(p => ({ ...p, english_name: v }))} />
+              <Input label="태그라인 (예: Guitarist / Session Guitarist)" value={t2NameData.tagline} onChange={v => setT2NameData(p => ({ ...p, tagline: v }))} />
               <Textarea label="설명1" value={t2NameData.description1} onChange={v => setT2NameData(p => ({ ...p, description1: v }))} />
               <Textarea label="설명2" value={t2NameData.description2} onChange={v => setT2NameData(p => ({ ...p, description2: v }))} />
               <Input label="활동지역" value={t2NameData.activity_area} onChange={v => setT2NameData(p => ({ ...p, activity_area: v }))} />

@@ -14,6 +14,7 @@
 import { useNavigate } from "react-router-dom";
 import type { Template1Data, T1AlbumCard, T1TextSection, T1ContactSection } from "../types/template1";
 import { dummyTemplate1 } from "../data/dummyTemplate1";
+import { ASSETS } from "../lib/assets";
 
 // ── 유틸: YouTube URL → embed URL 변환 ────────
 function toYoutubeEmbed(url: string): string {
@@ -266,7 +267,7 @@ function ContactBlock({ contact }: { contact: T1ContactSection }) {
 
       {/* 종이 이미지 (텍스트 포함) */}
       <img
-        src="/src/assets/images/paper.png"
+        src={ASSETS.paper}
         alt="Work with ME!"
         style={s.contactPaperImg}
       />

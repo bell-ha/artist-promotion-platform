@@ -16,6 +16,7 @@ class NameSection(SQLModel, table=True):
     thumbnail_url: Optional[str] = Field(default=None)
     name: Optional[str] = Field(default=None)           # 함태영
     english_name: Optional[str] = Field(default=None)   # Ham Tae...
+    tagline: Optional[str] = Field(default=None)        # Music Producer / Artist
     description1: Optional[str] = Field(default=None)
     description2: Optional[str] = Field(default=None)
 

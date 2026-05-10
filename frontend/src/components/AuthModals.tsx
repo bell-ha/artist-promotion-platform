@@ -68,13 +68,15 @@ export default function AuthModals({ isOpen, mode, onClose, onModeChange, onLogi
       const res = await axios.post(`${BACKEND_URL}/auth/google`, {
         token: credentialResponse.credential,
       });
-      const { access_token, is_new_user, nickname, email } = res.data as {
+      const { access_token, is_new_user, nickname, email, user_id } = res.data as {
         access_token: string;
         is_new_user: boolean;
         nickname: string;
         email: string;
+        user_id: number;
       };
       localStorage.setItem("token", access_token);
+      if (user_id) localStorage.setItem("user_id", String(user_id));
       setGoogleEmail(email || "");
 
       if (is_new_user === true) {
@@ -128,9 +130,10 @@ export default function AuthModals({ isOpen, mode, onClose, onModeChange, onLogi
         email: userEmail,
         password: userPw,
       });
-      const data = res.data as { access_token: string; nickname: string };
+      const data = res.data as { access_token: string; nickname: string; user_id: number };
       localStorage.setItem("token", data.access_token);
       localStorage.setItem("nickname", data.nickname);
+      if (data.user_id) localStorage.setItem("user_id", String(data.user_id));
       onLoginSuccess({ nickname: data.nickname });
       handleClose();
     } catch (e) {

@@ -96,7 +96,6 @@ export interface T2TextSection {
   order: number;
   title?: string;
   description?: string;
-  images?: T2ImageSectionImage[];  // 섹션 상단 이미지 (선택)
   cards: T2TextCard[];
 }
 

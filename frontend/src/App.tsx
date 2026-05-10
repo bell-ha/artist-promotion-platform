@@ -3,7 +3,6 @@ import { useEffect } from "react";
 import Main from "./pages/Main";
 import MyPage from "./pages/MyPage";
 import EditProfile from "./pages/EditProfile";
-import Profile from "./pages/Profile";
 import CategoryList from "./pages/CategoryList";
 import About from "./pages/About";
 import Terms from "./pages/Terms";
@@ -33,7 +32,7 @@ function AnimatedRoutes() {
 
         <Route path="/mypage" element={<MyPage />} />
         <Route path="/mypage/edit" element={<EditProfile />} />
-        <Route path="/mypage/profile" element={<Profile />} />
+        <Route path="/mypage/profile" element={<Navigate to={`/artist/${localStorage.getItem("user_id") ?? ""}`} replace />} />
 
         <Route path="/category/:category/:item" element={<CategoryList />} />
         <Route path="/category/:category" element={<CategoryList />} />

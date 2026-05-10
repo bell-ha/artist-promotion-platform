@@ -176,6 +176,7 @@ async def email_login(data: LoginRequest, session: AsyncSession = Depends(get_se
     access_token = create_access_token(data={"sub": user.email, "role": user.role.value})
     return {
         "access_token": access_token,
+        "user_id": user.id,
         "nickname": user.nickname,
         "email": user.email
     }
@@ -212,6 +213,7 @@ async def google_login(data: SocialTokenRequest, session: AsyncSession = Depends
         access_token = create_access_token(data={"sub": user.email, "role": user.role.value})
         return {
             "access_token": access_token,
+            "user_id": user.id,
             "nickname": user.nickname,
             "email": user.email,
             "is_new_user": is_new_user
@@ -224,6 +226,7 @@ async def google_login(data: SocialTokenRequest, session: AsyncSession = Depends
 @router.get("/me")
 async def get_me(current_user: User = Depends(get_current_user)):
     return {
+        "user_id": current_user.id,
         "email": current_user.email,
         "nickname": current_user.nickname,
         "provider": current_user.provider.value,

@@ -3,7 +3,7 @@
  *
  * 사용 API
  * ─────────────────────────────────────────────
- * GET  /profile/me          → 전체 프로필 데이터 (name/album/text sections)
+ * GET  /profile/me/t1       → 전체 프로필 데이터 (name/album/text sections)
  * GET  /profile/career-items → 직업 카테고리 목록
  *
  * 인증: Authorization: Bearer <token>  (localStorage의 "token")
@@ -29,7 +29,7 @@ export default function Profile() {
     if (!token) { navigate("/"); return; }
 
     Promise.all([
-      axios.get(`${BACKEND_URL}/profile/me`, { headers }),
+      axios.get(`${BACKEND_URL}/profile/me/t1`, { headers }),
       axios.get(`${BACKEND_URL}/profile/career-items`),
     ])
       .then(([profileRes, catRes]) => {

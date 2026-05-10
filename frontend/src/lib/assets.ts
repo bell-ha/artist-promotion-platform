@@ -16,9 +16,10 @@ export const ASSETS = {
   discoverCard3: img("discover-3.png"),
   discoverCard4: img("discover-4.png"),
   spotlightAlbum: img("spotlight-album.png"),
-  ctaBg: img("cta-bg.png"),
   iconSearch: img("icon-search.svg"),
   iconMail: img("icon-mail.svg"),
   iconWebsite: img("icon-website.svg"),
   iconInstagram: img("icon-instagram.svg"),
+  paper: img("paper.png"),
+  paper2: img("paper2.png"),
 } as const;
