@@ -4,6 +4,26 @@ import axios from "axios";
 import { BACKEND_URL } from "../lib/api";
 import { useAuthGuard } from "../hooks/useAuthGuard";
 
+function Eye() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+      <circle cx="12" cy="12" r="3"/>
+    </svg>
+  );
+}
+
+function EyeOff() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/>
+      <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/>
+      <path d="M14.12 14.12a3 3 0 1 1-4.24-4.24"/>
+      <line x1="1" y1="1" x2="23" y2="23"/>
+    </svg>
+  );
+}
+
 const PLAN_LABEL: Record<string, string> = {
   free: "Free",
   standard: "Standard",
@@ -16,6 +36,18 @@ export default function MyPage() {
   const [nickname, setNickname] = useState<string>("");
   const [token, setToken] = useState<string>("");
   const [plan, setPlan] = useState<string>("free");
+  const [provider, setProvider] = useState<string>("");
+
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [currentPwError, setCurrentPwError] = useState("");
+  const [confirmError, setConfirmError] = useState("");
+  const [passwordLoading, setPasswordLoading] = useState(false);
+  const [showCurrentPw, setShowCurrentPw] = useState(false);
+  const [showNewPw, setShowNewPw] = useState(false);
+  const [showConfirmPw, setShowConfirmPw] = useState(false);
 
   useEffect(() => {
     const t = localStorage.getItem("token") || "";
@@ -33,7 +65,88 @@ export default function MyPage() {
         setPlan(data.plan);
       })
       .catch(() => {});
+
+    axios
+      .get(`${BACKEND_URL}/auth/me`, {
+        headers: { Authorization: `Bearer ${t}` },
+      })
+      .then((res) => {
+        const data = res.data as { provider: string };
+        setProvider(data.provider);
+      })
+      .catch(() => {});
   }, [navigate]);
+
+  const closePasswordModal = () => {
+    setShowPasswordModal(false);
+    setCurrentPassword("");
+    setNewPassword("");
+    setConfirmPassword("");
+    setCurrentPwError("");
+    setConfirmError("");
+    setShowCurrentPw(false);
+    setShowNewPw(false);
+    setShowConfirmPw(false);
+  };
+
+  const handleCurrentPwBlur = async () => {
+    if (!currentPassword) return;
+    try {
+      await axios.post(
+        `${BACKEND_URL}/auth/verify-password`,
+        { password: currentPassword },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setCurrentPwError("");
+    } catch (err: unknown) {
+      if (axios.isAxiosError(err)) {
+        setCurrentPwError(err.response?.data?.detail || "현재 비밀번호가 틀렸습니다.");
+      }
+    }
+  };
+
+  const handleConfirmBlur = () => {
+    if (!confirmPassword) return;
+    if (newPassword.length < 6) {
+      setConfirmError("새 비밀번호는 6자 이상이어야 합니다.");
+    } else if (newPassword !== confirmPassword) {
+      setConfirmError("비밀번호가 일치하지 않습니다.");
+    } else {
+      setConfirmError("");
+    }
+  };
+
+  const handleChangePassword = async () => {
+    setCurrentPwError("");
+    if (newPassword !== confirmPassword) {
+      setConfirmError("비밀번호가 일치하지 않습니다.");
+      return;
+    }
+    if (newPassword.length < 6) {
+      setConfirmError("새 비밀번호는 6자 이상이어야 합니다.");
+      return;
+    }
+    setPasswordLoading(true);
+    try {
+      await axios.put(
+        `${BACKEND_URL}/auth/change-password`,
+        { current_password: currentPassword, new_password: newPassword },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      closePasswordModal();
+    } catch (err: unknown) {
+      if (axios.isAxiosError(err)) {
+        const detail = err.response?.data?.detail || "오류가 발생했습니다.";
+        if (detail.includes("현재 비밀번호")) {
+          setCurrentPwError(detail);
+        } else {
+          setConfirmError(detail);
+        }
+      }
+    } finally {
+      setPasswordLoading(false);
+    }
+  };
 
   const handleLogout = () => {
     localStorage.clear();
@@ -110,6 +223,11 @@ export default function MyPage() {
             <button className="btn btn--ghost" type="button" onClick={() => navigate("/mypage/profile")}>
               My portfolio
             </button>
+            {provider === "local" && (
+              <button className="btn btn--ghost" type="button" onClick={() => setShowPasswordModal(true)}>
+                Change Password
+              </button>
+            )}
             <button className="btn btn--ghost" type="button" onClick={() => navigate("/upgrade")}
               style={{ borderColor: "rgba(255,255,255,.35)" }}>
               ✦ Upgrade Plan
@@ -117,6 +235,66 @@ export default function MyPage() {
           </div>
         </section>
       </main>
+
+      {showPasswordModal && (
+        <div className="modal-overlay" onClick={closePasswordModal}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <h2 className="modal__title">비밀번호 변경</h2>
+            <div className="modal__fields">
+              <div className="field-wrap">
+                <input
+                  className="modal__input"
+                  type={showCurrentPw ? "text" : "password"}
+                  placeholder="현재 비밀번호"
+                  value={currentPassword}
+                  onChange={(e) => { setCurrentPassword(e.target.value); setCurrentPwError(""); }}
+                  onBlur={handleCurrentPwBlur}
+                />
+                <button className="pw-eye" type="button" onClick={() => setShowCurrentPw((v) => !v)}>
+                  {showCurrentPw ? <EyeOff /> : <Eye />}
+                </button>
+              </div>
+              {currentPwError && <p className="field-err">{currentPwError}</p>}
+
+              <div className="field-wrap">
+                <input
+                  className="modal__input"
+                  type={showNewPw ? "text" : "password"}
+                  placeholder="새 비밀번호 (6자 이상)"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                />
+                <button className="pw-eye" type="button" onClick={() => setShowNewPw((v) => !v)}>
+                  {showNewPw ? <EyeOff /> : <Eye />}
+                </button>
+              </div>
+
+              <div className="field-wrap">
+                <input
+                  className="modal__input"
+                  type={showConfirmPw ? "text" : "password"}
+                  placeholder="새 비밀번호 확인"
+                  value={confirmPassword}
+                  onChange={(e) => { setConfirmPassword(e.target.value); setConfirmError(""); }}
+                  onBlur={handleConfirmBlur}
+                />
+                <button className="pw-eye" type="button" onClick={() => setShowConfirmPw((v) => !v)}>
+                  {showConfirmPw ? <EyeOff /> : <Eye />}
+                </button>
+              </div>
+              {confirmError && <p className="field-err">{confirmError}</p>}
+            </div>
+            <div className="modal__actions">
+              <button className="btn btn--ghost" type="button" onClick={closePasswordModal}>
+                취소
+              </button>
+              <button className="btn btn--primary" type="button" onClick={handleChangePassword} disabled={passwordLoading}>
+                {passwordLoading ? "변경 중..." : "변경하기"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -149,4 +327,16 @@ body{ margin:0; color:var(--text); background:#0a0a0a; font-family:"Pretendard",
 .box__value{ margin-top: 8px; font-size: 14px; font-weight: 900; }
 .actions{ margin-top: 16px; display:flex; gap: 10px; flex-wrap: wrap; }
 @media (max-width: 640px){ .grid{ grid-template-columns: 1fr; } }
+.modal-overlay{ position:fixed; inset:0; background:rgba(0,0,0,.6); backdrop-filter:blur(4px); display:flex; align-items:center; justify-content:center; z-index:100; }
+.modal{ background:#111; border:1px solid rgba(255,255,255,.14); border-radius:16px; padding:28px 24px; width:100%; max-width:380px; }
+.modal__title{ margin:0 0 20px; font-size:18px; font-weight:900; }
+.modal__fields{ display:flex; flex-direction:column; gap:10px; }
+.field-wrap{ position:relative; }
+.modal__input{ background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.14); border-radius:8px; padding:12px 42px 12px 14px; color:#fff; font-size:14px; outline:none; width:100%; box-sizing:border-box; }
+.modal__input::placeholder{ color:rgba(255,255,255,.35); }
+.modal__input:focus{ border-color:rgba(255,255,255,.4); }
+.pw-eye{ position:absolute; right:12px; top:50%; transform:translateY(-50%); background:none; border:none; cursor:pointer; color:rgba(255,255,255,.4); padding:0; display:flex; align-items:center; }
+.pw-eye:hover{ color:rgba(255,255,255,.8); }
+.field-err{ margin:2px 0 0; font-size:12px; color:#ff6b6b; }
+.modal__actions{ margin-top:20px; display:flex; gap:10px; justify-content:flex-end; }
 `;

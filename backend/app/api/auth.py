@@ -35,12 +35,19 @@ conf = ConnectionConfig(
 )
 
 otp_storage: Dict[str, dict] = {}
+forgot_otp_storage: Dict[str, dict] = {}
 
 def _cleanup_expired_otps() -> None:
     now = datetime.now()
     expired = [email for email, data in otp_storage.items() if now > data["expires"]]
     for email in expired:
         del otp_storage[email]
+
+def _cleanup_forgot_otps() -> None:
+    now = datetime.now()
+    expired = [email for email, data in forgot_otp_storage.items() if now > data["expires"]]
+    for email in expired:
+        del forgot_otp_storage[email]
 
 # --- Request 모델 ---
 class EmailSignUpRequest(BaseModel):
@@ -57,6 +64,22 @@ class SocialTokenRequest(BaseModel):
 
 class NicknameUpdateRequest(BaseModel):
     nickname: str
+
+class ChangePasswordRequest(BaseModel):
+    current_password: str
+    new_password: str
+
+class VerifyPasswordRequest(BaseModel):
+    password: str
+
+class ForgotPasswordVerifyRequest(BaseModel):
+    email: EmailStr
+    otp: str
+
+class ForgotPasswordResetRequest(BaseModel):
+    email: EmailStr
+    otp: str
+    new_password: str
 
 class OtpVerifyRequest(BaseModel):
     email: EmailStr
@@ -195,6 +218,119 @@ async def google_login(data: SocialTokenRequest, session: AsyncSession = Depends
         raise HTTPException(status_code=400, detail="유효하지 않은 구글 토큰입니다.")
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@router.get("/me")
+async def get_me(current_user: User = Depends(get_current_user)):
+    return {
+        "email": current_user.email,
+        "nickname": current_user.nickname,
+        "provider": current_user.provider.value,
+        "subscription_plan": current_user.subscription_plan.value,
+    }
+
+
+@router.post("/verify-password")
+async def verify_current_password(
+    data: VerifyPasswordRequest,
+    current_user: User = Depends(get_current_user),
+):
+    if current_user.provider != LoginProvider.LOCAL:
+        raise HTTPException(status_code=400, detail="소셜 로그인 계정입니다.")
+    if not verify_password(data.password, current_user.password):
+        raise HTTPException(status_code=400, detail="현재 비밀번호가 틀렸습니다.")
+    return {"valid": True}
+
+
+@router.put("/change-password")
+async def change_password(
+    data: ChangePasswordRequest,
+    current_user: User = Depends(get_current_user),
+    session: AsyncSession = Depends(get_session),
+):
+    if current_user.provider != LoginProvider.LOCAL:
+        raise HTTPException(status_code=400, detail="소셜 로그인 계정은 비밀번호를 변경할 수 없습니다.")
+    if not verify_password(data.current_password, current_user.password):
+        raise HTTPException(status_code=400, detail="현재 비밀번호가 틀렸습니다.")
+    if len(data.new_password) < 6:
+        raise HTTPException(status_code=400, detail="새 비밀번호는 6자 이상이어야 합니다.")
+    current_user.password = get_password_hash(data.new_password)
+    session.add(current_user)
+    await session.commit()
+    return {"status": "ok"}
+
+
+@router.post("/forgot-password/send-otp")
+async def forgot_password_send_otp(email: EmailStr, session: AsyncSession = Depends(get_session)):
+    _cleanup_forgot_otps()
+    user = (await session.execute(select(User).where(User.email == email))).scalar_one_or_none()
+    if not user or user.provider != LoginProvider.LOCAL:
+        return {"message": "success"}  # 존재 여부 노출하지 않음
+
+    otp = "".join(random.choices(string.digits, k=6))
+    forgot_otp_storage[email] = {
+        "otp": otp,
+        "expires": datetime.now() + timedelta(minutes=5),
+        "verified": False,
+    }
+
+    html = f"""
+    <div style="background-color: #f4f4f4; padding: 50px 20px; font-family: sans-serif;">
+        <div style="max-width: 480px; margin: 0 auto; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.05);">
+            <div style="background-color: #5D5755; padding: 30px; text-align: center;">
+                <h2 style="color: #ffffff; margin: 0; font-size: 24px; letter-spacing: 1px;">StudioSeiHa</h2>
+            </div>
+            <div style="padding: 40px 30px; text-align: center; color: #333333;">
+                <h3 style="margin-top: 0; font-size: 20px;">비밀번호 재설정 안내</h3>
+                <p style="font-size: 15px; color: #666666; line-height: 1.6;">아래의 6자리 인증번호를 입력해 비밀번호를 재설정해주세요.</p>
+                <div style="margin: 30px 0; background-color: #f9f7f6; padding: 20px; border-radius: 8px;">
+                    <span style="font-size: 32px; font-weight: 800; letter-spacing: 8px; color: #5D5755;">{otp}</span>
+                </div>
+                <p style="font-size: 13px; color: #999999;">* 인증번호는 5분 동안만 유효합니다.</p>
+            </div>
+        </div>
+    </div>
+    """
+    message = MessageSchema(subject="[StudioSeiHa] 비밀번호 재설정 인증번호", recipients=[email], body=html, subtype="html")
+    fm = FastMail(conf)
+    await fm.send_message(message)
+    return {"message": "success"}
+
+
+@router.post("/forgot-password/verify-otp")
+async def forgot_password_verify_otp(data: ForgotPasswordVerifyRequest):
+    _cleanup_forgot_otps()
+    stored = forgot_otp_storage.get(data.email)
+    if not stored or stored["otp"] != data.otp:
+        raise HTTPException(status_code=400, detail="인증번호가 틀렸거나 만료되었습니다.")
+    if datetime.now() > stored["expires"]:
+        forgot_otp_storage.pop(data.email, None)
+        raise HTTPException(status_code=400, detail="인증번호가 만료되었습니다.")
+    forgot_otp_storage[data.email]["verified"] = True
+    return {"status": "verified"}
+
+
+@router.post("/forgot-password/reset")
+async def forgot_password_reset(data: ForgotPasswordResetRequest, session: AsyncSession = Depends(get_session)):
+    _cleanup_forgot_otps()
+    stored = forgot_otp_storage.get(data.email)
+    if not stored or stored["otp"] != data.otp or not stored.get("verified"):
+        raise HTTPException(status_code=400, detail="인증이 완료되지 않았거나 잘못된 요청입니다.")
+    if datetime.now() > stored["expires"]:
+        forgot_otp_storage.pop(data.email, None)
+        raise HTTPException(status_code=400, detail="인증이 만료되었습니다.")
+    if len(data.new_password) < 6:
+        raise HTTPException(status_code=400, detail="비밀번호는 6자 이상이어야 합니다.")
+
+    user = (await session.execute(select(User).where(User.email == data.email))).scalar_one_or_none()
+    if not user or user.provider != LoginProvider.LOCAL:
+        raise HTTPException(status_code=400, detail="유효하지 않은 요청입니다.")
+
+    user.password = get_password_hash(data.new_password)
+    session.add(user)
+    await session.commit()
+    forgot_otp_storage.pop(data.email, None)
+    return {"status": "ok"}
+
 
 @router.post("/update-nickname")
 async def update_nickname(
