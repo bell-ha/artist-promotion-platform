@@ -20,7 +20,9 @@ from app.core.deps import get_current_user
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
 
-GOOGLE_CLIENT_ID = "163502629915-hnul9f78fgomial7ktg27rubjapt0vu4.apps.googleusercontent.com"
+GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
+if not GOOGLE_CLIENT_ID:
+    raise ValueError("GOOGLE_CLIENT_ID 환경변수가 설정되지 않았습니다.")
 
 # --- 이메일 발송 설정 ---
 conf = ConnectionConfig(
