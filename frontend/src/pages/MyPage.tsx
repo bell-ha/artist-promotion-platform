@@ -38,6 +38,11 @@ export default function MyPage() {
   const [plan, setPlan] = useState<string>("free");
   const [provider, setProvider] = useState<string>("");
 
+  const [showNicknameModal, setShowNicknameModal] = useState(false);
+  const [newNickname, setNewNickname] = useState("");
+  const [nicknameLoading, setNicknameLoading] = useState(false);
+  const [nicknameError, setNicknameError] = useState("");
+
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -76,6 +81,36 @@ export default function MyPage() {
       })
       .catch(() => {});
   }, [navigate]);
+
+  const closeNicknameModal = () => {
+    setShowNicknameModal(false);
+    setNewNickname("");
+    setNicknameError("");
+  };
+
+  const handleChangeNickname = async () => {
+    if (!newNickname.trim()) {
+      setNicknameError("닉네임을 입력해주세요.");
+      return;
+    }
+    setNicknameLoading(true);
+    try {
+      await axios.post(
+        `${BACKEND_URL}/auth/update-nickname`,
+        { nickname: newNickname.trim() },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      localStorage.setItem("nickname", newNickname.trim());
+      setNickname(newNickname.trim());
+      closeNicknameModal();
+    } catch (err: unknown) {
+      if (axios.isAxiosError(err)) {
+        setNicknameError(err.response?.data?.detail || "오류가 발생했습니다.");
+      }
+    } finally {
+      setNicknameLoading(false);
+    }
+  };
 
   const closePasswordModal = () => {
     setShowPasswordModal(false);
@@ -220,6 +255,9 @@ export default function MyPage() {
             <button className="btn btn--primary" type="button" onClick={() => navigate("/mypage/edit")}>
               Edit profile
             </button>
+            <button className="btn btn--ghost" type="button" onClick={() => setShowNicknameModal(true)}>
+              Change Nickname
+            </button>
             <button className="btn btn--ghost" type="button" onClick={() => navigate("/mypage/profile")}>
               My portfolio
             </button>
@@ -235,6 +273,35 @@ export default function MyPage() {
           </div>
         </section>
       </main>
+
+      {showNicknameModal && (
+        <div className="modal-overlay" onClick={closeNicknameModal}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <h2 className="modal__title">닉네임 변경</h2>
+            <div className="modal__fields">
+              <div className="field-wrap">
+                <input
+                  className="modal__input"
+                  type="text"
+                  placeholder="새 닉네임"
+                  value={newNickname}
+                  onChange={(e) => { setNewNickname(e.target.value); setNicknameError(""); }}
+                  onKeyDown={(e) => e.key === "Enter" && handleChangeNickname()}
+                />
+              </div>
+              {nicknameError && <p className="field-err">{nicknameError}</p>}
+            </div>
+            <div className="modal__actions">
+              <button className="btn btn--ghost" type="button" onClick={closeNicknameModal}>
+                취소
+              </button>
+              <button className="btn btn--primary" type="button" onClick={handleChangeNickname} disabled={nicknameLoading}>
+                {nicknameLoading ? "변경 중..." : "변경하기"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {showPasswordModal && (
         <div className="modal-overlay" onClick={closePasswordModal}>
