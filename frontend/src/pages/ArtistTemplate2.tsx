@@ -10,6 +10,7 @@ import type {
   T2ContactSection,
 } from "../types/template2";
 import { dummyTemplate2 } from "../data/dummyTemplate2";
+import { ASSETS } from "../lib/assets";
 
 function toYoutubeEmbed(url: string): string {
   if (url.includes("/embed/")) return url;
@@ -186,15 +187,6 @@ function TextSectionBlock({ section }: { section: T2TextSection }) {
         </div>
       ) : section.title === "Technical · Production Info" ? (
         <>
-          {section.images && section.images.length > 0 && (
-            <div style={s.imageGrid}>
-              {[...section.images].sort((a, b) => a.order - b.order).map((img, i) => (
-                <div key={i} style={s.imageGridItem}>
-                  <img src={img.image_url} alt={`tech-${i}`} style={s.gearImg} />
-                </div>
-              ))}
-            </div>
-          )}
           <div style={s.bandSingleCardWrap}>
             <div style={s.bandSingleCard}>
               <div style={s.techList}>
@@ -248,7 +240,7 @@ function ContactBlock({ contact }: { contact: T2ContactSection }) {
   return (
     <section style={s.contactSection}>
       <div style={s.contactPaperWrap}>
-        <img src="/src/assets/images/paper2.png" alt="" style={s.contactPaperImg} />
+        <img src={ASSETS.paper2} alt="" style={s.contactPaperImg} />
 
         <div style={s.contactOverlay}>
           <p style={s.contactLabel}>contact</p>
