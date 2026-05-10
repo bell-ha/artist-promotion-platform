@@ -211,6 +211,9 @@ async def google_login(data: SocialTokenRequest, session: AsyncSession = Depends
         elif user.nickname.startswith("User_"):
             is_new_user = True
 
+        if not user.is_active:
+            raise HTTPException(status_code=403, detail="비활성화된 계정입니다.")
+
         access_token = create_access_token(data={"sub": user.email, "role": user.role.value})
         return {
             "access_token": access_token,

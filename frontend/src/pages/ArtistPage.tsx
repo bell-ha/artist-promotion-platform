@@ -31,6 +31,7 @@ function mergeAlbumCards(albumSection: any): T1AlbumCard[] {
 type PageState =
   | { status: "loading" }
   | { status: "error" }
+  | { status: "inactive" }
   | { status: "t1"; data: Template1Data }
   | { status: "t2"; data: Template2Data };
 
@@ -75,13 +76,27 @@ export default function ArtistPage() {
           setState({ status: "error" });
         }
       })
-      .catch(() => setState({ status: "error" }));
+      .catch((e) => {
+        if (e?.response?.status === 403) setState({ status: "inactive" });
+        else setState({ status: "error" });
+      });
   }, [username]);
 
   if (state.status === "loading") {
     return (
       <div style={{ minHeight: "100vh", background: "#0a0a0a", color: "#fff", display: "flex", alignItems: "center", justifyContent: "center" }}>
         로딩 중...
+      </div>
+    );
+  }
+
+  if (state.status === "inactive") {
+    return (
+      <div style={{ minHeight: "100vh", background: "#0a0a0a", color: "#fff", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 16 }}>
+        <p style={{ fontSize: 18 }}>비활성화된 계정입니다.</p>
+        <button onClick={() => navigate("/")} style={{ border: "1px solid rgba(255,255,255,.3)", background: "transparent", color: "#fff", padding: "8px 20px", borderRadius: 6, cursor: "pointer" }}>
+          홈으로
+        </button>
       </div>
     );
   }
