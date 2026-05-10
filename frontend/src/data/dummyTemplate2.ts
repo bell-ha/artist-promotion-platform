@@ -96,10 +96,6 @@ export const dummyTemplate2: Template2Data = {
       order: 1,
       title: "Technical · Production Info",
       description: "",
-      images: [
-        { order: 0, image_url: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=600&q=80" },
-        { order: 1, image_url: "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=600&q=80" },
-      ],
       cards: [
         {
           order: 0,

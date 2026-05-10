@@ -37,6 +37,7 @@ export default function MyPage() {
   const [token, setToken] = useState<string>("");
   const [plan, setPlan] = useState<string>("free");
   const [provider, setProvider] = useState<string>("");
+  const [userId, setUserId] = useState<string>(localStorage.getItem("user_id") || "");
 
   const [showNicknameModal, setShowNicknameModal] = useState(false);
   const [newNickname, setNewNickname] = useState("");
@@ -76,8 +77,12 @@ export default function MyPage() {
         headers: { Authorization: `Bearer ${t}` },
       })
       .then((res) => {
-        const data = res.data as { provider: string };
+        const data = res.data as { provider: string; user_id: number };
         setProvider(data.provider);
+        if (data.user_id) {
+          localStorage.setItem("user_id", String(data.user_id));
+          setUserId(String(data.user_id));
+        }
       })
       .catch(() => {});
   }, [navigate]);
@@ -258,7 +263,9 @@ export default function MyPage() {
             <button className="btn btn--ghost" type="button" onClick={() => setShowNicknameModal(true)}>
               Change Nickname
             </button>
-            <button className="btn btn--ghost" type="button" onClick={() => navigate("/mypage/profile")}>
+            <button className="btn btn--ghost" type="button" onClick={() => {
+              if (userId) navigate(`/artist/${userId}`);
+            }}>
               My portfolio
             </button>
             {provider === "local" && (

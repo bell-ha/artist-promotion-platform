@@ -16,6 +16,7 @@ class T2NameSection(SQLModel, table=True):
     thumbnail_url: Optional[str] = Field(default=None)
     name: Optional[str] = Field(default=None)
     english_name: Optional[str] = Field(default=None)
+    tagline: Optional[str] = Field(default=None)          # Guitarist / Session Guitarist
     description1: Optional[str] = Field(default=None)
     description2: Optional[str] = Field(default=None)
     activity_area: Optional[str] = Field(default=None)    # 활동지역

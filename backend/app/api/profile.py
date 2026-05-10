@@ -89,6 +89,7 @@ async def get_profile(
         name_section = {
             "name": ns.name,
             "english_name": ns.english_name,
+            "tagline": ns.tagline,
             "description1": ns.description1,
             "description2": ns.description2,
             "thumbnail_url": ns.thumbnail_url,
@@ -187,6 +188,7 @@ async def save_name_section(
 
     ns.name = data.name
     ns.english_name = data.english_name
+    ns.tagline = data.tagline
     ns.description1 = data.description1
     ns.description2 = data.description2
     ns.thumbnail_url = data.thumbnail_url
@@ -340,6 +342,7 @@ async def get_profile_t2(
         name_section = {
             "name": ns.name,
             "english_name": ns.english_name,
+            "tagline": ns.tagline,
             "description1": ns.description1,
             "description2": ns.description2,
             "thumbnail_url": ns.thumbnail_url,
@@ -448,6 +451,7 @@ async def save_t2_name_section(
 
     ns.name = data.name
     ns.english_name = data.english_name
+    ns.tagline = data.tagline
     ns.description1 = data.description1
     ns.description2 = data.description2
     ns.thumbnail_url = data.thumbnail_url
@@ -610,6 +614,176 @@ async def save_t2_image_sections(
 
     await session.commit()
     return {"status": "ok"}
+
+
+# ── 공개 프로필 조회 (user_id 기반) ───────────────
+@router.get("/by-id/{user_id}")
+async def get_public_profile_by_id(
+    user_id: int,
+    session: AsyncSession = Depends(get_session),
+):
+    user = (await session.execute(
+        select(User).where(User.id == user_id)
+    )).scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=404, detail="사용자를 찾을 수 없습니다.")
+
+    active = user.active_template
+
+    if active == 1:
+        ns = (await session.execute(
+            select(NameSection).where(NameSection.user_id == user.id)
+        )).scalar_one_or_none()
+        name_section = None
+        if ns:
+            jobs = (await session.execute(
+                select(NameSectionJob).where(NameSectionJob.name_section_id == ns.id)
+            )).scalars().all()
+            name_section = {
+                "name": ns.name, "english_name": ns.english_name,
+                "tagline": ns.tagline, "description1": ns.description1,
+                "description2": ns.description2, "thumbnail_url": ns.thumbnail_url,
+                "career_item_ids": [j.career_item_id for j in jobs],
+            }
+
+        album_sec = (await session.execute(
+            select(AlbumSection).where(AlbumSection.user_id == user.id)
+        )).scalar_one_or_none()
+        album_section = None
+        if album_sec:
+            yt = (await session.execute(select(YoutubeCard).where(YoutubeCard.album_section_id == album_sec.id).order_by(YoutubeCard.order))).scalars().all()
+            sc = (await session.execute(select(SoundcloudCard).where(SoundcloudCard.album_section_id == album_sec.id).order_by(SoundcloudCard.order))).scalars().all()
+            ic = (await session.execute(select(ImageCard).where(ImageCard.album_section_id == album_sec.id).order_by(ImageCard.order))).scalars().all()
+            ni = (await session.execute(select(NoImageCard).where(NoImageCard.album_section_id == album_sec.id).order_by(NoImageCard.order))).scalars().all()
+            album_section = {
+                "youtube_cards": [_row_to_dict(r) for r in yt],
+                "soundcloud_cards": [_row_to_dict(r) for r in sc],
+                "image_cards": [_row_to_dict(r) for r in ic],
+                "no_image_cards": [_row_to_dict(r) for r in ni],
+            }
+
+        text_secs = (await session.execute(
+            select(TextSection).where(TextSection.user_id == user.id).order_by(TextSection.order)
+        )).scalars().all()
+        text_sections = []
+        for ts in text_secs:
+            cards = (await session.execute(
+                select(TextCard).where(TextCard.text_section_id == ts.id).order_by(TextCard.order)
+            )).scalars().all()
+            cards_data = []
+            for card in cards:
+                body_items = (await session.execute(
+                    select(TextCardBodyItem).where(TextCardBodyItem.text_card_id == card.id).order_by(TextCardBodyItem.order)
+                )).scalars().all()
+                cards_data.append({
+                    "title": card.title, "detail": card.detail, "order": card.order,
+                    "body_items": [{"title": b.title, "content": b.content, "order": b.order} for b in body_items],
+                })
+            text_sections.append({"title": ts.title, "description": ts.description, "order": ts.order, "cards": cards_data})
+
+        cs = (await session.execute(
+            select(ContactSection).where(ContactSection.user_id == user.id)
+        )).scalar_one_or_none()
+        contact_section = None
+        if cs:
+            contact_section = {
+                "phone1": cs.phone1, "phone2": cs.phone2,
+                "email1": cs.email1, "email2": cs.email2, "email3": cs.email3,
+                "instagram_url": cs.instagram_url, "tiktok_url": cs.tiktok_url,
+                "youtube_url": cs.youtube_url, "extra_description": cs.extra_description,
+            }
+
+        return {
+            "active_template": 1, "username": user.nickname,
+            "name_section": name_section, "album_section": album_section,
+            "text_sections": text_sections, "contact_section": contact_section,
+        }
+
+    elif active == 2:
+        ns = (await session.execute(
+            select(T2NameSection).where(T2NameSection.user_id == user.id)
+        )).scalar_one_or_none()
+        name_section = None
+        if ns:
+            jobs = (await session.execute(
+                select(T2NameSectionJob).where(T2NameSectionJob.name_section_id == ns.id)
+            )).scalars().all()
+            name_section = {
+                "name": ns.name, "english_name": ns.english_name,
+                "tagline": ns.tagline, "description1": ns.description1,
+                "description2": ns.description2, "thumbnail_url": ns.thumbnail_url,
+                "activity_area": ns.activity_area,
+                "career_item_ids": [j.career_item_id for j in jobs],
+            }
+
+        album_sec = (await session.execute(
+            select(T2AlbumSection).where(T2AlbumSection.user_id == user.id)
+        )).scalar_one_or_none()
+        album_section = None
+        if album_sec:
+            yt = (await session.execute(select(T2YoutubeCard).where(T2YoutubeCard.album_section_id == album_sec.id).order_by(T2YoutubeCard.order))).scalars().all()
+            sc = (await session.execute(select(T2SoundcloudCard).where(T2SoundcloudCard.album_section_id == album_sec.id).order_by(T2SoundcloudCard.order))).scalars().all()
+            ic = (await session.execute(select(T2ImageCard).where(T2ImageCard.album_section_id == album_sec.id).order_by(T2ImageCard.order))).scalars().all()
+            ni = (await session.execute(select(T2NoImageCard).where(T2NoImageCard.album_section_id == album_sec.id).order_by(T2NoImageCard.order))).scalars().all()
+            album_section = {
+                "youtube_cards": [_row_to_dict(r) for r in yt],
+                "soundcloud_cards": [_row_to_dict(r) for r in sc],
+                "image_cards": [_row_to_dict(r) for r in ic],
+                "no_image_cards": [_row_to_dict(r) for r in ni],
+            }
+
+        text_secs = (await session.execute(
+            select(T2TextSection).where(T2TextSection.user_id == user.id).order_by(T2TextSection.order)
+        )).scalars().all()
+        text_sections = []
+        for ts in text_secs:
+            cards = (await session.execute(
+                select(T2TextCard).where(T2TextCard.text_section_id == ts.id).order_by(T2TextCard.order)
+            )).scalars().all()
+            cards_data = []
+            for card in cards:
+                body_items = (await session.execute(
+                    select(T2TextCardBodyItem).where(T2TextCardBodyItem.text_card_id == card.id).order_by(T2TextCardBodyItem.order)
+                )).scalars().all()
+                cards_data.append({
+                    "title": card.title, "detail": card.detail, "order": card.order,
+                    "body_items": [{"title": b.title, "content": b.content, "order": b.order} for b in body_items],
+                })
+            text_sections.append({"title": ts.title, "description": ts.description, "order": ts.order, "cards": cards_data})
+
+        cs = (await session.execute(
+            select(T2ContactSection).where(T2ContactSection.user_id == user.id)
+        )).scalar_one_or_none()
+        contact_section = None
+        if cs:
+            contact_section = {
+                "phone1": cs.phone1, "phone2": cs.phone2,
+                "email1": cs.email1, "email2": cs.email2, "email3": cs.email3,
+                "instagram_url": cs.instagram_url, "tiktok_url": cs.tiktok_url,
+                "youtube_url": cs.youtube_url, "extra_description": cs.extra_description,
+            }
+
+        image_secs = (await session.execute(
+            select(T2ImageSection).where(T2ImageSection.user_id == user.id).order_by(T2ImageSection.order)
+        )).scalars().all()
+        image_sections = []
+        for img_sec in image_secs:
+            images = (await session.execute(
+                select(T2ImageSectionImage).where(T2ImageSectionImage.image_section_id == img_sec.id).order_by(T2ImageSectionImage.order)
+            )).scalars().all()
+            image_sections.append({
+                "title": img_sec.title, "description": img_sec.description, "order": img_sec.order,
+                "images": [{"image_url": img.image_url, "order": img.order} for img in images],
+            })
+
+        return {
+            "active_template": 2, "username": user.nickname,
+            "name_section": name_section, "album_section": album_section,
+            "text_sections": text_sections, "contact_section": contact_section,
+            "image_sections": image_sections,
+        }
+
+    raise HTTPException(status_code=404, detail="활성 템플릿이 없습니다.")
 
 
 # ── Active Template 변경 ───────────────────────
