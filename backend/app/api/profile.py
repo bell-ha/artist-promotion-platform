@@ -638,7 +638,7 @@ async def list_public_artists(
     session: AsyncSession = Depends(get_session),
 ):
     rows = (await session.execute(
-        select(User.nickname, NameSection.name, NameSection.thumbnail_url, User.active_template)
+        select(User.nickname, NameSection.name, NameSection.english_name, NameSection.thumbnail_url, User.active_template)
         .join(NameSection, NameSection.user_id == User.id)
         .join(NameSectionJob, NameSectionJob.name_section_id == NameSection.id)
         .where(NameSectionJob.career_item_id == career_item_id)
@@ -649,6 +649,7 @@ async def list_public_artists(
         {
             "nickname": r.nickname,
             "name": r.name,
+            "english_name": r.english_name,
             "thumbnail_url": r.thumbnail_url,
             "active_template": r.active_template,
         }
