@@ -157,6 +157,12 @@ function AlbumCardBlock({ card }: { card: T1AlbumCard }) {
           </a>
         )}
 
+        {card.type === "no_image" && card.mp3_url && (
+          <audio controls style={s.audioPlayer} src={card.mp3_url}>
+            Your browser does not support the audio element.
+          </audio>
+        )}
+
       </div>
 
       {/* 앨범 정보 */}
@@ -477,6 +483,11 @@ const s: Record<string, React.CSSProperties> = {
     display: "block",
     objectFit: "cover" as const,
     maxHeight: 400,
+  },
+  audioPlayer: {
+    width: "100%",
+    display: "block",
+    marginTop: 8,
   },
   // Album info
   albumInfo: { padding: "8px 0 32px", textAlign: "center" as const },

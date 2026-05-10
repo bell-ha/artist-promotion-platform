@@ -44,7 +44,14 @@ async def upload_file(
     import app.cloudinary  # cloudinary config 초기화
 
     contents = await file.read()
-    result = await asyncio.to_thread(cloudinary.uploader.upload, contents, resource_type="auto")
+    content_type = file.content_type or ""
+    if content_type.startswith("audio/"):
+        resource_type = "raw"
+    elif content_type.startswith("video/"):
+        resource_type = "video"
+    else:
+        resource_type = "image"
+    result = await asyncio.to_thread(cloudinary.uploader.upload, contents, resource_type=resource_type)
     return {"url": result["secure_url"]}
 
 
