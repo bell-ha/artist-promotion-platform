@@ -71,7 +71,7 @@ async def get_career_items(session: AsyncSession = Depends(get_session)):
 
 
 # ── 내 프로필 전체 조회 ────────────────────────
-@router.get("/me")
+@router.get("/me/t1")
 async def get_profile(
     current_user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
@@ -170,7 +170,7 @@ async def get_profile(
 
 
 # ── Name Section 저장 ──────────────────────────
-@router.put("/name-section")
+@router.put("/t1/name-section")
 async def save_name_section(
     data: NameSectionSave,
     current_user: User = Depends(get_current_user),
@@ -200,7 +200,7 @@ async def save_name_section(
 
 
 # ── Album Section 저장 ─────────────────────────
-@router.put("/album-section")
+@router.put("/t1/album-section")
 async def save_album_section(
     data: AlbumSectionSave,
     current_user: User = Depends(get_current_user),
@@ -235,7 +235,7 @@ async def save_album_section(
 
 
 # ── Text Sections 저장 ─────────────────────────
-@router.put("/text-sections")
+@router.put("/t1/text-sections")
 async def save_text_sections(
     data: TextSectionsSave,
     current_user: User = Depends(get_current_user),
@@ -289,7 +289,7 @@ async def save_text_sections(
 
 
 # ── Contact Section 저장 ──────────────────────
-@router.put("/contact-section")
+@router.put("/t1/contact-section")
 async def save_contact_section(
     data: ContactSectionSave,
     current_user: User = Depends(get_current_user),
