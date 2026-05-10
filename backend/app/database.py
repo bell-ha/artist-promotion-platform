@@ -66,6 +66,40 @@ async def init_db():
             )
         )
 
+        # users 삭제 시 포트폴리오 데이터 CASCADE 설정
+        await conn.execute(__import__("sqlalchemy").text("""
+            DO $$
+            DECLARE
+                fk RECORD;
+            BEGIN
+                FOR fk IN
+                    SELECT DISTINCT
+                        tc.constraint_name,
+                        tc.table_name
+                    FROM information_schema.table_constraints tc
+                    JOIN information_schema.key_column_usage kcu
+                        ON tc.constraint_name = kcu.constraint_name
+                    JOIN information_schema.referential_constraints rc
+                        ON tc.constraint_name = rc.constraint_name
+                    JOIN information_schema.key_column_usage kcu2
+                        ON rc.unique_constraint_name = kcu2.constraint_name
+                    WHERE tc.constraint_type = 'FOREIGN KEY'
+                      AND kcu.column_name = 'user_id'
+                      AND kcu2.table_name = 'users'
+                      AND rc.delete_rule != 'CASCADE'
+                LOOP
+                    EXECUTE format(
+                        'ALTER TABLE %I DROP CONSTRAINT %I',
+                        fk.table_name, fk.constraint_name
+                    );
+                    EXECUTE format(
+                        'ALTER TABLE %I ADD CONSTRAINT %I FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE',
+                        fk.table_name, fk.constraint_name
+                    );
+                END LOOP;
+            END$$;
+        """))
+
         # userrole enum을 USER/ADMIN(대문자)만 남기도록 정리
         await conn.execute(__import__("sqlalchemy").text("""
             DO $$
