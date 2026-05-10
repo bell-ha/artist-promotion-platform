@@ -629,3 +629,28 @@ async def update_active_template(
     session.add(current_user)
     await session.commit()
     return {"status": "ok", "active_template": data.template_number}
+
+
+# ── 카테고리별 아티스트 공개 목록 ──────────────
+@router.get("/public/list")
+async def list_public_artists(
+    career_item_id: int,
+    session: AsyncSession = Depends(get_session),
+):
+    rows = (await session.execute(
+        select(User.nickname, NameSection.name, NameSection.thumbnail_url, User.active_template)
+        .join(NameSection, NameSection.user_id == User.id)
+        .join(NameSectionJob, NameSectionJob.name_section_id == NameSection.id)
+        .where(NameSectionJob.career_item_id == career_item_id)
+        .where(User.is_active == True)
+    )).all()
+
+    return [
+        {
+            "nickname": r.nickname,
+            "name": r.name,
+            "thumbnail_url": r.thumbnail_url,
+            "active_template": r.active_template,
+        }
+        for r in rows
+    ]
