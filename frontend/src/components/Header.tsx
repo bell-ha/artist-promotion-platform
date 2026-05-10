@@ -21,6 +21,7 @@ export default function Header() {
   const [authMode, setAuthMode] = useState<AuthMode>("signin");
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [expandedCat, setExpandedCat] = useState<string | null>(null);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -37,14 +38,14 @@ export default function Header() {
 
   return (
     <>
-      <header className="fixed top-0 left-0 right-0 z-50 bg-black border-b border-white/10 h-[128px] max-md:h-[60px]">
-        <div className="flex items-center px-[126px] max-md:px-4 justify-between h-full">
+      <header className="fixed top-0 left-0 right-0 z-50 bg-black border-b border-white/10 h-[128px]">
+        <div className="flex items-center px-[126px] max-xl:px-4 justify-between h-full">
           {/* 좌: 로고 */}
-          <div className="flex items-end pb-1 max-md:pb-0">
+          <div className="flex items-end pb-1">
             <img
               src={ASSETS.logo}
               alt="SEIHI"
-              className="w-[110px] max-md:w-[72px] object-contain cursor-pointer"
+              className="w-[110px] object-contain cursor-pointer"
               onClick={() => navigate("/")}
               onError={(e) => {
                 const t = e.currentTarget;
@@ -54,7 +55,7 @@ export default function Header() {
               }}
             />
             <span
-              className="font-black tracking-[.12em] text-[18px] max-md:text-[15px] text-white hidden cursor-pointer"
+              className="font-black tracking-[.12em] text-[18px] text-white hidden cursor-pointer"
               onClick={() => navigate("/")}
             >
               SEIHI
@@ -62,35 +63,59 @@ export default function Header() {
           </div>
 
           {/* 우: 인증 버튼 (데스크탑) + 햄버거 (모바일) */}
-          <div className="flex gap-2 items-center pb-1 max-md:pb-0 font-inter">
+          <div className="flex gap-2 items-center pb-1 font-inter">
             {/* 인증 버튼 — 데스크탑만 */}
-            <div className="flex gap-2 items-center max-md:hidden">
+            <div className="flex gap-2 items-center max-xl:hidden">
               {user ? (
                 <>
                   <span className="text-[13px] text-white/95">
                     <strong>{user.nickname}</strong>님
                   </span>
-                  <button
-                    className="border border-white/35 bg-white/10 text-white px-[10px] py-[8px] rounded-[6px] cursor-pointer font-extrabold text-[12px] hover:bg-white/20 transition-colors"
-                    type="button"
-                    onClick={() => navigate("/upgrade")}
-                  >
-                    ✦ Upgrade
-                  </button>
-                  <button
-                    className="border border-white/18 bg-white/6 text-white px-[10px] py-[8px] rounded-[6px] cursor-pointer font-extrabold text-[12px] hover:bg-white/12 transition-colors"
-                    type="button"
-                    onClick={() => navigate("/mypage")}
-                  >
-                    MyPage
-                  </button>
-                  <button
-                    className="border border-white/18 bg-white/6 text-white px-[10px] py-[8px] rounded-[6px] cursor-pointer font-extrabold text-[12px] hover:bg-white/12 transition-colors"
-                    type="button"
-                    onClick={() => { localStorage.clear(); window.location.reload(); }}
-                  >
-                    LogOut
-                  </button>
+                  <div className="relative">
+                    <button
+                      className="border border-white/18 bg-white/6 text-white px-[10px] py-[8px] rounded-[6px] cursor-pointer font-extrabold text-[12px] hover:bg-white/12 transition-colors flex items-center gap-[6px]"
+                      type="button"
+                      onClick={() => setMenuOpen((v) => !v)}
+                    >
+                      더보기
+                      <span className="text-[9px] text-white/50">{menuOpen ? "▲" : "▼"}</span>
+                    </button>
+                    {menuOpen && (
+                      <>
+                        <div className="fixed inset-0 z-[90]" onClick={() => setMenuOpen(false)} />
+                        <div
+                          className="absolute right-0 top-[calc(100%+8px)] min-w-[140px] rounded-[12px] border border-white/12 overflow-hidden z-[100]"
+                          style={{
+                            background: "rgba(10,10,10,0.96)",
+                            boxShadow: "0 16px 36px rgba(0,0,0,0.6)",
+                            backdropFilter: "blur(12px)",
+                          }}
+                        >
+                          <button
+                            className="w-full text-left border-none bg-transparent text-white px-[14px] py-[11px] cursor-pointer text-[12px] font-extrabold hover:bg-white/8 transition-colors border-b border-white/8"
+                            type="button"
+                            onClick={() => { navigate("/upgrade"); setMenuOpen(false); }}
+                          >
+                            ✦ Upgrade
+                          </button>
+                          <button
+                            className="w-full text-left border-none bg-transparent text-white/85 px-[14px] py-[11px] cursor-pointer text-[12px] font-semibold hover:bg-white/8 hover:text-white transition-colors border-b border-white/8"
+                            type="button"
+                            onClick={() => { navigate("/mypage"); setMenuOpen(false); }}
+                          >
+                            MyPage
+                          </button>
+                          <button
+                            className="w-full text-left border-none bg-transparent text-white/60 px-[14px] py-[11px] cursor-pointer text-[12px] font-semibold hover:bg-white/8 hover:text-white/85 transition-colors"
+                            type="button"
+                            onClick={() => { localStorage.clear(); window.location.reload(); }}
+                          >
+                            LogOut
+                          </button>
+                        </div>
+                      </>
+                    )}
+                  </div>
                 </>
               ) : (
                 <>
@@ -114,7 +139,7 @@ export default function Header() {
 
             {/* 햄버거 버튼 — 모바일만 */}
             <button
-              className="hidden max-md:flex flex-col justify-center items-center gap-[5px] w-[36px] h-[36px] bg-transparent border-none cursor-pointer"
+              className="hidden max-xl:flex flex-col justify-center items-center gap-[5px] w-[36px] h-[36px] bg-transparent border-none cursor-pointer"
               type="button"
               aria-label="메뉴 열기"
               onClick={() => setDrawerOpen(true)}
@@ -127,7 +152,7 @@ export default function Header() {
         </div>
 
         {/* 중: 카테고리 네비 — 데스크탑만 */}
-        <nav className="absolute bottom-[22px] left-0 right-0 flex justify-center flex-wrap font-noto max-md:hidden" aria-label="Career categories">
+        <nav className="absolute bottom-[22px] left-0 right-0 flex justify-center flex-wrap font-noto max-xl:hidden" aria-label="Career categories">
           {CATEGORIES.map((cat, i) => (
             <div key={cat.label} className="flex items-center">
               {i > 0 && <span className="text-white/30 text-[10px] font-light mx-[8px]">/</span>}
@@ -169,7 +194,7 @@ export default function Header() {
 
       {/* 모바일 드로어 */}
       {drawerOpen && (
-        <div className="fixed inset-0 z-[200] flex md:hidden">
+        <div className="fixed inset-0 z-[200] flex xl:hidden">
           {/* 배경 오버레이 */}
           <div
             className="absolute inset-0 bg-black/60"
