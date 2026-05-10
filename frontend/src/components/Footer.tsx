@@ -1,6 +1,6 @@
 export default function Footer() {
   return (
-    <footer className="bg-[#0d1b2a] text-white">
+    <footer className="bg-black text-white">
       <div className="max-w-7xl mx-auto px-6 py-14 grid grid-cols-1 md:grid-cols-3 gap-10">
 
         {/* 좌측: 회사 정보 */}
