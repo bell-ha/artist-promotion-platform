@@ -5,6 +5,7 @@
 export interface T2NameSection {
   name: string;
   english_name: string;
+  tagline?: string;
   description1?: string;
   description2?: string;
   thumbnail_url?: string;
@@ -95,6 +96,7 @@ export interface T2TextSection {
   order: number;
   title?: string;
   description?: string;
+  images?: T2ImageSectionImage[];  // 섹션 상단 이미지 (선택)
   cards: T2TextCard[];
 }
 
