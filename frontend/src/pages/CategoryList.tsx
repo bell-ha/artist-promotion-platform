@@ -51,7 +51,7 @@ export default function CategoryList() {
         onLogOut={() => { localStorage.clear(); window.location.reload(); }}
       />
 
-      <main className="bg-black min-h-screen pt-[128px]">
+      <main className="bg-black min-h-screen pt-[128px] max-xl:pt-[60px]">
         {/* 히어로 */}
         <div className="relative w-full overflow-hidden h-[823px] max-md:h-[360px]">
           <img

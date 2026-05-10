@@ -38,14 +38,14 @@ export default function Header() {
 
   return (
     <>
-      <header className="fixed top-0 left-0 right-0 z-50 bg-black border-b border-white/10 h-[128px]">
+      <header className="fixed top-0 left-0 right-0 z-50 bg-black border-b border-white/10 h-[128px] max-xl:h-[60px]">
         <div className="flex items-center px-[126px] max-xl:px-4 justify-between h-full">
           {/* 좌: 로고 */}
           <div className="flex items-end pb-1">
             <img
               src={ASSETS.logo}
               alt="SEIHI"
-              className="w-[110px] object-contain cursor-pointer"
+              className="w-[110px] max-xl:w-[72px] object-contain cursor-pointer"
               onClick={() => navigate("/")}
               onError={(e) => {
                 const t = e.currentTarget;
@@ -55,7 +55,7 @@ export default function Header() {
               }}
             />
             <span
-              className="font-black tracking-[.12em] text-[18px] text-white hidden cursor-pointer"
+              className="font-black tracking-[.12em] text-[18px] max-xl:text-[15px] text-white hidden cursor-pointer"
               onClick={() => navigate("/")}
             >
               SEIHI
@@ -139,14 +139,14 @@ export default function Header() {
 
             {/* 햄버거 버튼 — 모바일만 */}
             <button
-              className="hidden max-xl:flex flex-col justify-center items-center gap-[5px] w-[36px] h-[36px] bg-transparent border-none cursor-pointer"
+              className="hidden max-xl:flex flex-col justify-center items-center gap-[4px] w-[30px] h-[30px] bg-transparent border-none cursor-pointer"
               type="button"
               aria-label="메뉴 열기"
               onClick={() => setDrawerOpen(true)}
             >
-              <span className="block w-[22px] h-[2px] bg-white rounded-full" />
-              <span className="block w-[22px] h-[2px] bg-white rounded-full" />
-              <span className="block w-[22px] h-[2px] bg-white rounded-full" />
+              <span className="block w-[18px] h-[1.5px] bg-white rounded-full" />
+              <span className="block w-[18px] h-[1.5px] bg-white rounded-full" />
+              <span className="block w-[18px] h-[1.5px] bg-white rounded-full" />
             </button>
           </div>
         </div>
