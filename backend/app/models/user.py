@@ -6,8 +6,8 @@ from datetime import datetime
 
 # 1. 권한 설정 (단순화: USER, ADMIN)
 class UserRole(str, enum.Enum):
-    USER = "user"
-    ADMIN = "admin"
+    USER = "USER"
+    ADMIN = "ADMIN"
 
 # 2. 가입 경로 설정
 class LoginProvider(str, enum.Enum):

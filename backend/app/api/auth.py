@@ -178,7 +178,8 @@ async def email_login(data: LoginRequest, session: AsyncSession = Depends(get_se
         "access_token": access_token,
         "user_id": user.id,
         "nickname": user.nickname,
-        "email": user.email
+        "email": user.email,
+        "role": user.role.value,
     }
 
 @router.post("/google")
@@ -216,7 +217,8 @@ async def google_login(data: SocialTokenRequest, session: AsyncSession = Depends
             "user_id": user.id,
             "nickname": user.nickname,
             "email": user.email,
-            "is_new_user": is_new_user
+            "is_new_user": is_new_user,
+            "role": user.role.value,
         }
     except ValueError:
         raise HTTPException(status_code=400, detail="유효하지 않은 구글 토큰입니다.")

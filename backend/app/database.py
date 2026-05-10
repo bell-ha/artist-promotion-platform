@@ -19,6 +19,7 @@ engine = create_async_engine(
     echo=os.getenv("DB_ECHO", "false").lower() == "true",
     pool_pre_ping=True,
     pool_recycle=240,  # NeonDB 5분 idle timeout보다 1분 일찍 갱신
+    connect_args={"statement_cache_size": 0},  # enum 타입 변경 후 캐시 충돌 방지
 )
 
 # 세션 생성기 설정
@@ -64,6 +65,20 @@ async def init_db():
                 "WHERE subscription_plan IN ('free', 'standard', 'premium')"
             )
         )
+
+        # userrole enum을 USER/ADMIN(대문자)만 남기도록 정리
+        await conn.execute(__import__("sqlalchemy").text("""
+            DO $$
+            BEGIN
+                IF EXISTS (SELECT 1 FROM pg_type WHERE typname = 'userrole') THEN
+                    ALTER TABLE users ALTER COLUMN role TYPE text USING UPPER(role::text);
+                    UPDATE users SET role = 'USER' WHERE role NOT IN ('USER', 'ADMIN');
+                    DROP TYPE userrole;
+                    CREATE TYPE userrole AS ENUM ('USER', 'ADMIN');
+                    ALTER TABLE users ALTER COLUMN role TYPE userrole USING role::userrole;
+                END IF;
+            END$$;
+        """))
 
 async def get_session() -> AsyncGenerator[AsyncSession, None]:
     async with AsyncSessionLocal() as session:

@@ -5,7 +5,7 @@ from sqlalchemy.future import select
 from jose import JWTError, jwt
 
 from app.database import get_session
-from app.models.user import User
+from app.models.user import User, UserRole
 from app.core.security import SECRET_KEY, ALGORITHM
 
 
@@ -29,5 +29,13 @@ async def get_current_user(
     user = result.scalar_one_or_none()
     if not user:
         raise HTTPException(status_code=404, detail="유저를 찾을 수 없습니다.")
+    if not user.is_active:
+        raise HTTPException(status_code=403, detail="비활성화된 계정입니다.")
 
     return user
+
+
+async def require_admin(current_user: User = Depends(get_current_user)) -> User:
+    if current_user.role != UserRole.ADMIN:
+        raise HTTPException(status_code=403, detail="관리자 권한이 필요합니다.")
+    return current_user

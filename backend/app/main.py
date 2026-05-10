@@ -8,6 +8,7 @@ from app.database import init_db, seed_categories
 from app.api import auth
 from app.api import profile
 from app.api import payment
+from app.api import admin
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -42,6 +43,7 @@ app.add_middleware(
 app.include_router(auth.router)
 app.include_router(profile.router)
 app.include_router(payment.router)
+app.include_router(admin.router)
 
 @app.get("/")
 async def root():

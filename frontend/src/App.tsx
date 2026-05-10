@@ -13,6 +13,7 @@ import Footer from "./components/Footer";
 import ArtistTemplate1 from "./pages/ArtistTemplate1";
 import ArtistTemplate2 from "./pages/ArtistTemplate2";
 import ArtistPage from "./pages/ArtistPage";
+import AdminPage from "./pages/AdminPage";
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -37,6 +38,7 @@ function AnimatedRoutes() {
         <Route path="/category/:category/:item" element={<CategoryList />} />
         <Route path="/category/:category" element={<CategoryList />} />
 
+        <Route path="/admin" element={<AdminPage />} />
         <Route path="/upgrade" element={<Upgrade />} />
 
         <Route path="/about" element={<About />} />

@@ -38,6 +38,7 @@ export default function MyPage() {
   const [plan, setPlan] = useState<string>("free");
   const [provider, setProvider] = useState<string>("");
   const [userId, setUserId] = useState<string>(localStorage.getItem("user_id") || "");
+  const isAdmin = localStorage.getItem("role")?.toUpperCase() === "ADMIN";
 
   const [showNicknameModal, setShowNicknameModal] = useState(false);
   const [newNickname, setNewNickname] = useState("");
@@ -277,6 +278,12 @@ export default function MyPage() {
               style={{ borderColor: "rgba(255,255,255,.35)" }}>
               ✦ Upgrade Plan
             </button>
+            {isAdmin && (
+              <button className="btn btn--ghost" type="button" onClick={() => navigate("/admin")}
+                style={{ borderColor: "rgba(255,200,0,.4)", color: "#ffc800" }}>
+                Admin
+              </button>
+            )}
           </div>
         </section>
       </main>
