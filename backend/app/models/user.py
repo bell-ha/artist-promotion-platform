@@ -17,9 +17,9 @@ class LoginProvider(str, enum.Enum):
 
 # 3. 구독 플랜 설정
 class SubscriptionPlan(str, enum.Enum):
-    FREE = "free"
-    STANDARD = "standard"
-    PREMIUM = "premium"
+    FREE = "FREE"
+    STANDARD = "STANDARD"
+    PREMIUM = "PREMIUM"
 
 class User(SQLModel, table=True):
     __tablename__ = "users"

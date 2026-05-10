@@ -3,7 +3,7 @@ import re
 from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
-from sqlalchemy import func, text
+from sqlalchemy import func, text, String, cast
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
@@ -43,7 +43,9 @@ async def get_stats(
         select(func.count()).select_from(User).where(func.date(User.created_at) == today)
     )).scalar()
     paid_users = (await session.execute(
-        select(func.count()).select_from(User).where(User.subscription_plan != SubscriptionPlan.FREE)
+        select(func.count()).select_from(User).where(
+            func.upper(cast(User.subscription_plan, String)) != "FREE"
+        )
     )).scalar()
     active_artists = (await session.execute(
         select(func.count()).select_from(User).where(User.is_active == True)
