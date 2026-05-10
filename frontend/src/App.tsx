@@ -11,6 +11,9 @@ import Privacy from "./pages/Privacy";
 import Guide from "./pages/Guide";
 import Upgrade from "./pages/Upgrade";
 import Footer from "./components/Footer";
+import ArtistTemplate1 from "./pages/ArtistTemplate1";
+import ArtistTemplate2 from "./pages/ArtistTemplate2";
+import ArtistPage from "./pages/ArtistPage";
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -41,6 +44,20 @@ function AnimatedRoutes() {
         <Route path="/terms" element={<Terms />} />
         <Route path="/privacy" element={<Privacy />} />
         <Route path="/guide" element={<Guide />} />
+
+        {/* 아티스트 프로필 페이지 (동적) */}
+        <Route path="/artist/:username" element={<ArtistPage />} />
+
+        {/* 템플릿 미리보기 (더미데이터) */}
+        <Route path="/preview/template1" element={<ArtistTemplate1 />} />
+        <Route path="/preview/template2" element={<ArtistTemplate2 />} />
+
+        {/* 아티스트 프로필 페이지 (동적) */}
+        <Route path="/artist/:username" element={<ArtistPage />} />
+
+        {/* 템플릿 미리보기 (더미데이터) */}
+        <Route path="/preview/template1" element={<ArtistTemplate1 />} />
+        <Route path="/preview/template2" element={<ArtistTemplate2 />} />
 
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
