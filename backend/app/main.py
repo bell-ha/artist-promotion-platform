@@ -23,9 +23,16 @@ app = FastAPI(
 
 # ✅ 미들웨어 설정
 app.add_middleware(SessionMiddleware, secret_key=os.getenv("SESSION_SECRET", "dev-session-secret-change-in-production"))
+ALLOWED_ORIGINS = [
+    "http://localhost:5173",
+    "http://localhost:3000",
+    "https://www.seihi.co.kr",
+    "https://seihi.co.kr",
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://localhost:3000"],
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
