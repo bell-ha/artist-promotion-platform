@@ -4,7 +4,7 @@ export const dummyTemplate2: Template2Data = {
   username: "hyup-g",
 
   name_section: {
-    name: "지형",
+    name: "지협",
     english_name: "Hyup_G",
     tagline: "Guitarist / Session Guitarist",
     description1: "찰나의 순간에 솔직함과 순수함을 담아내는 손 끝의 진심.",
