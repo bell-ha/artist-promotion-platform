@@ -43,7 +43,7 @@ export default function ArtistPage() {
     if (!username) { setState({ status: "error" }); return; }
     setState({ status: "loading" });
     axios
-      .get(`${BACKEND_URL}/profile/by-id/${username}`)
+      .get(`${BACKEND_URL}/profile/public/${username}`)
       .then(r => {
         const d = r.data;
         // eslint-disable-next-line @typescript-eslint/no-explicit-any

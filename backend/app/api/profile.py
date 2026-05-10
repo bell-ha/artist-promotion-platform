@@ -786,6 +786,42 @@ async def get_public_profile_by_id(
     raise HTTPException(status_code=404, detail="활성 템플릿이 없습니다.")
 
 
+# ── 카테고리별 아티스트 공개 목록 ──────────────
+@router.get("/public/list")
+async def list_public_artists(
+    career_item_id: int,
+    session: AsyncSession = Depends(get_session),
+):
+    rows = (await session.execute(
+        select(User.id, User.nickname, NameSection.name, NameSection.english_name, NameSection.thumbnail_url, User.active_template)
+        .join(NameSection, NameSection.user_id == User.id)
+        .join(NameSectionJob, NameSectionJob.name_section_id == NameSection.id)
+        .where(NameSectionJob.career_item_id == career_item_id)
+        .where(User.is_active == True)
+    )).all()
+
+    return [
+        {
+            "id": r.id,
+            "nickname": r.nickname,
+            "name": r.name,
+            "english_name": r.english_name,
+            "thumbnail_url": r.thumbnail_url,
+            "active_template": r.active_template,
+        }
+        for r in rows
+    ]
+
+
+# ── 공개 프로필 조회 (user_id 기반, 공개용) ──────────────
+@router.get("/public/{user_id}")
+async def get_public_profile(
+    user_id: int,
+    session: AsyncSession = Depends(get_session),
+):
+    return await get_public_profile_by_id(user_id, session)
+
+
 # ── Active Template 변경 ───────────────────────
 class ActiveTemplateRequest(BaseModel):
     template_number: int
@@ -803,29 +839,3 @@ async def update_active_template(
     session.add(current_user)
     await session.commit()
     return {"status": "ok", "active_template": data.template_number}
-
-
-# ── 카테고리별 아티스트 공개 목록 ──────────────
-@router.get("/public/list")
-async def list_public_artists(
-    career_item_id: int,
-    session: AsyncSession = Depends(get_session),
-):
-    rows = (await session.execute(
-        select(User.nickname, NameSection.name, NameSection.english_name, NameSection.thumbnail_url, User.active_template)
-        .join(NameSection, NameSection.user_id == User.id)
-        .join(NameSectionJob, NameSectionJob.name_section_id == NameSection.id)
-        .where(NameSectionJob.career_item_id == career_item_id)
-        .where(User.is_active == True)
-    )).all()
-
-    return [
-        {
-            "nickname": r.nickname,
-            "name": r.name,
-            "english_name": r.english_name,
-            "thumbnail_url": r.thumbnail_url,
-            "active_template": r.active_template,
-        }
-        for r in rows
-    ]
