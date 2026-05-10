@@ -1,9 +1,15 @@
+import asyncio
+import re
 from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy import func, text
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
+
+import cloudinary
+import cloudinary.api
+import app.cloudinary as _cloudinary_init  # noqa: F401
 
 from app.database import get_session
 from app.models.user import User, UserRole, SubscriptionPlan
@@ -12,8 +18,9 @@ from app.models.template1 import (
     YoutubeCard, SoundcloudCard, ImageCard, NoImageCard,
 )
 from app.models.template2 import (
-    T2AlbumSection,
+    T2AlbumSection, T2NameSection,
     T2YoutubeCard, T2SoundcloudCard, T2ImageCard, T2NoImageCard,
+    T2ImageSectionImage,
 )
 from app.core.deps import require_admin
 
@@ -236,3 +243,101 @@ async def _get_user_or_404(user_id: int, session: AsyncSession) -> User:
     if not user:
         raise HTTPException(status_code=404, detail="유저를 찾을 수 없습니다.")
     return user
+
+
+# ──────────────────────────────────────────────
+# Cloudinary 고아 파일 관리
+# ──────────────────────────────────────────────
+
+def _extract_public_id(url: str) -> str | None:
+    """Cloudinary URL에서 public_id 추출"""
+    match = re.search(r'/upload/(?:v\d+/)?(.+?)(?:\.\w+)?$', url)
+    return match.group(1) if match else None
+
+
+async def _collect_db_public_ids(session: AsyncSession) -> set[str]:
+    """DB에 저장된 모든 Cloudinary URL의 public_id 수집"""
+    urls: list[str] = []
+
+    for model, col in [
+        (NameSection, NameSection.thumbnail_url),
+        (T2NameSection, T2NameSection.thumbnail_url),
+        (ImageCard, ImageCard.image_url),
+        (T2ImageCard, T2ImageCard.image_url),
+        (NoImageCard, NoImageCard.mp3_url),
+        (T2NoImageCard, T2NoImageCard.mp3_url),
+        (T2ImageSectionImage, T2ImageSectionImage.image_url),
+    ]:
+        rows = (await session.execute(select(col).where(col.isnot(None)))).scalars().all()
+        urls.extend(rows)
+
+    public_ids = set()
+    for url in urls:
+        pid = _extract_public_id(url)
+        if pid:
+            public_ids.add(pid)
+    return public_ids
+
+
+@router.get("/cloudinary/orphans")
+async def get_cloudinary_orphans(
+    _: User = Depends(require_admin),
+    session: AsyncSession = Depends(get_session),
+):
+    """DB에 없는 Cloudinary 파일 목록 반환"""
+    db_ids = await _collect_db_public_ids(session)
+
+    # Cloudinary에서 전체 파일 목록 가져오기 (image + raw)
+    cloudinary_files: list[dict] = []
+    for resource_type in ("image", "raw"):
+        next_cursor = None
+        while True:
+            kwargs = {"resource_type": resource_type, "max_results": 500}
+            if next_cursor:
+                kwargs["next_cursor"] = next_cursor
+            result = await asyncio.to_thread(cloudinary.api.resources, **kwargs)
+            cloudinary_files.extend(result.get("resources", []))
+            next_cursor = result.get("next_cursor")
+            if not next_cursor:
+                break
+
+    orphans = [
+        {
+            "public_id": f["public_id"],
+            "resource_type": f["resource_type"],
+            "url": f["secure_url"],
+            "bytes": f.get("bytes", 0),
+            "created_at": f.get("created_at", ""),
+        }
+        for f in cloudinary_files
+        if f["public_id"] not in db_ids
+    ]
+
+    total_bytes = sum(o["bytes"] for o in orphans)
+    return {"orphans": orphans, "count": len(orphans), "total_mb": round(total_bytes / 1024 / 1024, 2)}
+
+
+class DeleteOrphansRequest(BaseModel):
+    public_ids: list[str]
+
+
+@router.delete("/cloudinary/orphans")
+async def delete_cloudinary_orphans(
+    data: DeleteOrphansRequest,
+    _: User = Depends(require_admin),
+    session: AsyncSession = Depends(get_session),
+):
+    """선택한 고아 파일 Cloudinary에서 삭제"""
+    # DB에 실제로 없는 파일만 삭제 (안전장치)
+    db_ids = await _collect_db_public_ids(session)
+    safe_to_delete = [pid for pid in data.public_ids if pid not in db_ids]
+
+    deleted, failed = [], []
+    for pid in safe_to_delete:
+        try:
+            await asyncio.to_thread(cloudinary.uploader.destroy, pid)
+            deleted.append(pid)
+        except Exception:
+            failed.append(pid)
+
+    return {"deleted": len(deleted), "failed": failed}

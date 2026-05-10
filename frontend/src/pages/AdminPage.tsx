@@ -23,7 +23,7 @@ interface UserDetail extends AdminUser {
   uploads: { type: string; id: number; title: string | null; album: string | null }[];
 }
 
-type Tab = "dashboard" | "users";
+type Tab = "dashboard" | "users" | "storage";
 
 // ── Main ──────────────────────────────────────
 export default function AdminPage() {
@@ -111,6 +111,7 @@ export default function AdminPage() {
           {([
             { key: "dashboard", label: "대시보드" },
             { key: "users", label: "회원 관리" },
+          { key: "storage", label: "파일 관리" },
           ] as { key: Tab; label: string }[]).map(item => (
             <button key={item.key} onClick={() => setTab(item.key)} style={{
               width: "100%", textAlign: "left", padding: "10px 20px", background: "transparent",
@@ -135,6 +136,7 @@ export default function AdminPage() {
         {tab === "dashboard" && (
           <Dashboard stats={stats} recentSignups={recentSignups} recentUploads={recentUploads} />
         )}
+        {tab === "storage" && <StorageTab authHeader={authHeader} />}
         {tab === "users" && (
           <UsersTab
             users={filteredUsers}
@@ -392,6 +394,140 @@ function UserDetailPanel({ user, onClose, onToggleActive, onChangePlan, onDelete
             계정 삭제
           </button>
         </div>
+      )}
+    </div>
+  );
+}
+
+// ── 파일 관리 (Cloudinary 고아 파일) ──────────────
+interface OrphanFile {
+  public_id: string;
+  resource_type: string;
+  url: string;
+  bytes: number;
+  created_at: string;
+}
+
+function StorageTab({ authHeader }: { authHeader: { headers: { Authorization: string } } }) {
+  const [scanning, setScanning] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [orphans, setOrphans] = useState<OrphanFile[] | null>(null);
+  const [totalMb, setTotalMb] = useState(0);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [done, setDone] = useState<{ deleted: number; failed: string[] } | null>(null);
+
+  const scan = async () => {
+    setScanning(true);
+    setOrphans(null);
+    setDone(null);
+    setSelected(new Set());
+    const res = await axios.get(`${BACKEND_URL}/admin/cloudinary/orphans`, authHeader).catch(() => null);
+    if (res) {
+      setOrphans(res.data.orphans);
+      setTotalMb(res.data.total_mb);
+      setSelected(new Set(res.data.orphans.map((o: OrphanFile) => o.public_id)));
+    }
+    setScanning(false);
+  };
+
+  const toggleSelect = (pid: string) => {
+    setSelected(prev => {
+      const next = new Set(prev);
+      next.has(pid) ? next.delete(pid) : next.add(pid);
+      return next;
+    });
+  };
+
+  const deleteSelected = async () => {
+    if (!confirm(`선택한 ${selected.size}개 파일을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.`)) return;
+    setDeleting(true);
+    const res = await axios.delete(`${BACKEND_URL}/admin/cloudinary/orphans`, {
+      ...authHeader,
+      data: { public_ids: Array.from(selected) },
+    }).catch(() => null);
+    if (res) {
+      setDone(res.data);
+      setOrphans(prev => prev ? prev.filter(o => !selected.has(o.public_id)) : null);
+      setSelected(new Set());
+    }
+    setDeleting(false);
+  };
+
+  return (
+    <div>
+      <h2 style={pageTitle}>파일 관리</h2>
+      <div style={{ marginBottom: 20, display: "flex", alignItems: "center", gap: 12 }}>
+        <button onClick={scan} disabled={scanning} style={{ ...actionBtn, width: "auto", padding: "8px 20px", fontSize: 13 }}>
+          {scanning ? "스캔 중..." : "고아 파일 스캔"}
+        </button>
+        <span style={{ fontSize: 12, color: "rgba(255,255,255,0.3)" }}>
+          DB에 없는 Cloudinary 파일을 찾습니다
+        </span>
+      </div>
+
+      {done && (
+        <div style={{ ...panel, marginBottom: 16, borderColor: "rgba(74,222,128,0.3)" }}>
+          <span style={{ fontSize: 13, color: "#4ade80" }}>✓ {done.deleted}개 삭제 완료</span>
+          {done.failed.length > 0 && <span style={{ fontSize: 12, color: "#f87171", marginLeft: 12 }}>실패: {done.failed.length}개</span>}
+        </div>
+      )}
+
+      {orphans !== null && (
+        orphans.length === 0 ? (
+          <div style={panel}>
+            <p style={{ ...empty, color: "#4ade80" }}>고아 파일이 없습니다. 깨끗해요!</p>
+          </div>
+        ) : (
+          <div>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+              <div style={{ fontSize: 13, color: "rgba(255,255,255,0.5)" }}>
+                총 <strong style={{ color: "#fff" }}>{orphans.length}개</strong> / <strong style={{ color: "#f87171" }}>{totalMb} MB</strong>
+              </div>
+              <div style={{ display: "flex", gap: 8 }}>
+                <button
+                  onClick={() => setSelected(new Set(orphans.map(o => o.public_id)))}
+                  style={{ ...actionBtn, width: "auto", padding: "5px 12px", fontSize: 11 }}
+                >
+                  전체 선택
+                </button>
+                <button
+                  onClick={deleteSelected}
+                  disabled={deleting || selected.size === 0}
+                  style={{ ...actionBtn, width: "auto", padding: "5px 14px", fontSize: 11, borderColor: "rgba(248,113,113,0.5)", color: "#f87171" }}
+                >
+                  {deleting ? "삭제 중..." : `선택 삭제 (${selected.size}개)`}
+                </button>
+              </div>
+            </div>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              {orphans.map(o => (
+                <div
+                  key={o.public_id}
+                  onClick={() => toggleSelect(o.public_id)}
+                  style={{
+                    ...panel, padding: "10px 14px", cursor: "pointer", display: "flex", alignItems: "center", gap: 12,
+                    borderColor: selected.has(o.public_id) ? "rgba(248,113,113,0.4)" : "rgba(255,255,255,0.08)",
+                    background: selected.has(o.public_id) ? "rgba(248,113,113,0.05)" : "rgba(255,255,255,0.03)",
+                  }}
+                >
+                  <input type="checkbox" checked={selected.has(o.public_id)} onChange={() => {}} style={{ flexShrink: 0 }} />
+                  {o.resource_type === "image" && (
+                    <img src={o.url} alt="" style={{ width: 48, height: 48, objectFit: "cover", borderRadius: 4, flexShrink: 0 }} />
+                  )}
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 12, color: "rgba(255,255,255,0.7)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                      {o.public_id}
+                    </div>
+                    <div style={{ fontSize: 11, color: "rgba(255,255,255,0.35)", marginTop: 2 }}>
+                      {o.resource_type} · {(o.bytes / 1024).toFixed(1)} KB · {o.created_at.slice(0, 10)}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )
       )}
     </div>
   );
