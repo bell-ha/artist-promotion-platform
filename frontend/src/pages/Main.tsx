@@ -5,26 +5,10 @@ import HeroSection from "../components/HeroSection";
 import DiscoverSounds from "../components/DiscoverSounds";
 import SpotlightAlbum from "../components/SpotlightAlbum";
 import CTASection from "../components/CTASection";
-import AuthModals from "../components/AuthModals";
-import type { User, AuthMode } from "../types/auth";
-import { isTokenExpired, clearSession } from "../lib/token";
 
 export default function Main() {
   const location = useLocation();
   const navigate = useNavigate();
-
-  // 로그인 세션 복원 (만료된 토큰은 자동 정리)
-  useEffect(() => {
-    const token = localStorage.getItem("token");
-    const nickname = localStorage.getItem("nickname");
-    if (token && nickname && !nickname.startsWith("User_")) {
-      if (isTokenExpired(token)) {
-        clearSession();
-      } else {
-        setUser({ nickname });
-      }
-    }
-  }, []);
 
   // /login 경로 접근 시 로그인 모달 자동 오픈
   useEffect(() => {
