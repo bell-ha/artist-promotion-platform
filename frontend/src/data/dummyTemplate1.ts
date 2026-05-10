@@ -31,7 +31,7 @@ export const dummyTemplate1: Template1Data = {
       {
         type: "soundcloud",
         order: 1,
-        link: "https://soundcloud.com/ohyeahtv/ohi-away",
+        link: "https://soundcloud.com/ipkpjurlpgj1/mp3",
         project_title: "DISCOGRAPHY · PROJECT HISTORY 01",
         project_subtitle: "참여 앨범",
         album_name: "Album name",
@@ -60,7 +60,7 @@ export const dummyTemplate1: Template1Data = {
         type: "no_image",
         order: 3,
         project_title: "DISCOGRAPHY · PROJECT HISTORY 03",
-        project_subtitle: "Ambient Composition",
+        project_subtitle: "",
         album_name: "Ambient Composition",
         composer: "Solo Composer / Arranger",
         category_desc: "",

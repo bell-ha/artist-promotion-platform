@@ -156,12 +156,6 @@ function AlbumCardBlock({ card }: { card: T1AlbumCard }) {
           </a>
         )}
 
-        {card.type === "no_image" && (
-          <div style={s.noImagePlaceholder}>
-            <span style={s.noImageIcon}>♪</span>
-            <span style={s.noImageText}>{card.album_name ?? "Audio Track"}</span>
-          </div>
-        )}
       </div>
 
       {/* 앨범 정보 */}
@@ -211,25 +205,43 @@ function TextSectionBlock({ section }: { section: T1TextSection }) {
         <p style={s.textSectionDesc}>{section.description}</p>
       )}
 
-      <div style={s.textCardGrid}>
-        {sortedCards.map((card, i) => (
-          <div key={i} style={s.textCard}>
-            {card.title && <h4 style={s.textCardTitle}>{card.title}</h4>}
-            {card.detail && <p style={s.textCardDetail}>{card.detail}</p>}
+      {section.title === "Technical · Production Info" ? (
+        <div style={s.textCard}>
+          {sortedCards.map((card, i) => (
+            <div key={i} style={s.techItem}>
+              {card.title && <h4 style={s.textCardTitle}>{card.title}</h4>}
+              {[...card.body_items]
+                .sort((a, b) => a.order - b.order)
+                .map((item, j) => (
+                  <div key={j} style={s.bodyItem}>
+                    {item.title && <span style={s.bodyItemLabel}>{item.title}</span>}
+                    {item.content && <span style={s.bodyItemContent}>{item.content}</span>}
+                  </div>
+                ))}
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div style={s.textCardGrid}>
+          {sortedCards.map((card, i) => (
+            <div key={i} style={s.textCard}>
+              {card.title && <h4 style={s.textCardTitle}>{card.title}</h4>}
+              {card.detail && <p style={s.textCardDetail}>{card.detail}</p>}
 
-            {[...card.body_items]
-              .sort((a, b) => a.order - b.order)
-              .map((item, j) => (
-                <div key={j} style={s.bodyItem}>
-                  {item.title && <span style={s.bodyItemLabel}>{item.title}</span>}
-                  {item.content && (
-                    <span style={s.bodyItemContent}>{item.content}</span>
-                  )}
-                </div>
-              ))}
-          </div>
-        ))}
-      </div>
+              {[...card.body_items]
+                .sort((a, b) => a.order - b.order)
+                .map((item, j) => (
+                  <div key={j} style={s.bodyItem}>
+                    {item.title && <span style={s.bodyItemLabel}>{item.title}</span>}
+                    {item.content && (
+                      <span style={s.bodyItemContent}>{item.content}</span>
+                    )}
+                  </div>
+                ))}
+            </div>
+          ))}
+        </div>
+      )}
     </section>
   );
 }
@@ -465,19 +477,6 @@ const s: Record<string, React.CSSProperties> = {
     objectFit: "cover" as const,
     maxHeight: 400,
   },
-  noImagePlaceholder: {
-    height: 160,
-    display: "flex",
-    flexDirection: "column" as const,
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 10,
-    background: "#2a2a2a",
-    color: "rgba(255,255,255,0.3)",
-  },
-  noImageIcon: { fontSize: 36, opacity: 0.4 },
-  noImageText: { fontSize: 13, letterSpacing: "0.06em" },
-
   // Album info
   albumInfo: { padding: "8px 0 32px", textAlign: "center" as const },
   albumName: {
@@ -579,6 +578,9 @@ const s: Record<string, React.CSSProperties> = {
     fontWeight: 500,
     letterSpacing: "0.05em",
   },
+  techItem: {
+    padding: "16px 0 0",
+  },
   textCardGrid: {
     display: "flex",
     flexDirection: "column" as const,
@@ -589,10 +591,11 @@ const s: Record<string, React.CSSProperties> = {
     background: "rgba(255,255,255,0.45)",
     border: "1px solid rgba(0,0,0,0.08)",
     borderRadius: 10,
-    padding: "28px 24px",
+    padding: "20px 24px 20px",
+    marginBottom: 32,
   },
   textCardTitle: {
-    margin: "0 0 16px",
+    margin: "0 0 10px",
     fontSize: 16,
     fontWeight: 700,
     color: "rgba(0,0,0,0.85)",
@@ -610,7 +613,7 @@ const s: Record<string, React.CSSProperties> = {
     flexDirection: "column" as const,
     alignItems: "center" as const,
     gap: 4,
-    marginBottom: 20,
+    marginBottom: 12,
     lineHeight: 1.6,
     textAlign: "center" as const,
   },
