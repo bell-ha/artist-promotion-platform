@@ -66,35 +66,46 @@ async def init_db():
             )
         )
 
-        # users 삭제 시 포트폴리오 데이터 CASCADE 설정
+        # users 삭제 시 포트폴리오 데이터 전체 CASCADE 설정
         await conn.execute(__import__("sqlalchemy").text("""
             DO $$
             DECLARE
                 fk RECORD;
+                col_name TEXT;
+                ref_table TEXT;
+                ref_col TEXT;
             BEGIN
                 FOR fk IN
-                    SELECT DISTINCT
+                    SELECT
                         tc.constraint_name,
-                        tc.table_name
+                        tc.table_name,
+                        kcu.column_name,
+                        ccu.table_name AS foreign_table_name,
+                        ccu.column_name AS foreign_column_name
                     FROM information_schema.table_constraints tc
                     JOIN information_schema.key_column_usage kcu
                         ON tc.constraint_name = kcu.constraint_name
+                        AND tc.table_schema = kcu.table_schema
+                    JOIN information_schema.constraint_column_usage ccu
+                        ON ccu.constraint_name = tc.constraint_name
                     JOIN information_schema.referential_constraints rc
                         ON tc.constraint_name = rc.constraint_name
-                    JOIN information_schema.key_column_usage kcu2
-                        ON rc.unique_constraint_name = kcu2.constraint_name
                     WHERE tc.constraint_type = 'FOREIGN KEY'
-                      AND kcu.column_name = 'user_id'
-                      AND kcu2.table_name = 'users'
                       AND rc.delete_rule != 'CASCADE'
+                      AND (
+                          tc.table_name LIKE 't1_%'
+                          OR tc.table_name LIKE 't2_%'
+                          OR (kcu.column_name = 'user_id' AND ccu.table_name = 'users')
+                      )
                 LOOP
                     EXECUTE format(
                         'ALTER TABLE %I DROP CONSTRAINT %I',
                         fk.table_name, fk.constraint_name
                     );
                     EXECUTE format(
-                        'ALTER TABLE %I ADD CONSTRAINT %I FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE',
-                        fk.table_name, fk.constraint_name
+                        'ALTER TABLE %I ADD CONSTRAINT %I FOREIGN KEY (%I) REFERENCES %I(%I) ON DELETE CASCADE',
+                        fk.table_name, fk.constraint_name,
+                        fk.column_name, fk.foreign_table_name, fk.foreign_column_name
                     );
                 END LOOP;
             END$$;
