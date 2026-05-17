@@ -49,11 +49,15 @@ export default function DiscoverSounds({
     return LOCAL_CARDS;
   }, [cards]);
 
-  // 3D 캐러셀은 카드를 3회 반복해서 연속감을 만듦
-  const carouselCards = useMemo(
-    () => [...baseCards, ...baseCards, ...baseCards],
-    [baseCards]
-  );
+  // 카드가 적을 때 캐러셀이 비어 보이지 않도록 최소 12개 확보
+  const carouselCards = useMemo(() => {
+    const minCount = 12;
+    let repeated = [...baseCards];
+    while (repeated.length < minCount) {
+      repeated = [...repeated, ...baseCards];
+    }
+    return repeated;
+  }, [baseCards]);
   const total = carouselCards.length;
   const stepDeg = 360 / total;
 
@@ -104,10 +108,23 @@ export default function DiscoverSounds({
         el.style.transform = `rotateY(${norm}deg) translateZ(${RADIUS}px) scale(${sizeScale})`;
         el.style.opacity = String(Math.max(0, Math.pow(cos, 1.5)));
         el.style.display = abs > 115 ? "none" : "block";
+        el.style.zIndex = String(Math.round(cos * 100));
       });
     }
 
     applyTransforms();
+
+    // 자동 회전
+    const AUTO_SPEED = 0.04;
+    let rafId: number;
+    function autoRotate() {
+      if (!isDragging.current) {
+        offsetRef.current -= AUTO_SPEED;
+        applyTransforms();
+      }
+      rafId = requestAnimationFrame(autoRotate);
+    }
+    rafId = requestAnimationFrame(autoRotate);
 
     function onMouseDown(e: MouseEvent) {
       isDragging.current = true;
@@ -148,6 +165,7 @@ export default function DiscoverSounds({
     window.addEventListener("mouseup", onMouseUp);
 
     return () => {
+      cancelAnimationFrame(rafId);
       container?.removeEventListener("mousedown", onMouseDown);
       container?.removeEventListener("touchstart", onTouchStart);
       container?.removeEventListener("touchmove", onTouchMove);
@@ -263,6 +281,7 @@ export default function DiscoverSounds({
                   transform: `rotateY(${initNorm}deg) translateZ(${RADIUS}px) scale(${initScale})`,
                   opacity: initOpacity,
                   display: initAbs > 115 ? "none" : "block",
+                  zIndex: Math.round(initCos * 100),
                   pointerEvents: "none",
                 }}
               >
