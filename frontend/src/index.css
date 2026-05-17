@@ -80,6 +80,15 @@ textarea:not([disabled]):focus {
   box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.15);
 }
 
+/* 헤더 카테고리 드롭다운 부드러운 전환 */
+.nav-dropdown {
+  transition: opacity 0.2s ease, visibility 0.2s ease, transform 0.2s ease;
+  transform: translateY(-4px);
+}
+.group:hover .nav-dropdown {
+  transform: translateY(0);
+}
+
 /* 그라디언트 유틸리티 클래스 */
 .bg-hero-gradient {
   background: linear-gradient(180deg, #0B0807 -8%, #130908 5%, #210B0B 10%, #BC6464 35%, #000 60%);

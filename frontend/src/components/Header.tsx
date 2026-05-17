@@ -166,7 +166,7 @@ export default function Header() {
 
                 {/* 드롭다운 */}
                 <div
-                  className="absolute top-full left-1/2 -translate-x-1/2 min-w-[200px] p-[10px] rounded-[14px] border border-white/12 hidden group-hover:block z-[100]"
+                  className="absolute top-full left-1/2 -translate-x-1/2 min-w-[200px] p-[10px] rounded-[14px] border border-white/12 opacity-0 invisible group-hover:opacity-100 group-hover:visible nav-dropdown z-[100]"
                   style={{
                     background: "rgba(0,0,0,.88)",
                     boxShadow: "0 18px 40px rgba(0,0,0,.55)",
