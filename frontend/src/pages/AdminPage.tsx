@@ -23,7 +23,25 @@ interface UserDetail extends AdminUser {
   uploads: { type: string; id: number; title: string | null; album: string | null }[];
 }
 
-type Tab = "dashboard" | "users" | "storage";
+type Tab = "dashboard" | "users" | "storage" | "mainpage";
+
+// ── MainPage types ────────────────────────────
+interface AdminMainPageSettings {
+  content: {
+    hero_title: string; hero_subtitle: string;
+    hero_bg1_url: string | null; hero_bg2_url: string | null;
+    discover_subtitle: string; cta_title: string; cta_subtitle: string;
+  };
+  spotlight: {
+    subtitle: string; artist_id: number | null; image_url: string | null;
+    title: string | null; artist_name: string | null; genre: string | null;
+    resolved_url: string | null;
+  };
+  cards: {
+    id: number; slot_order: number; artist_id: number | null;
+    image_url: string | null; resolved_url: string | null;
+  }[];
+}
 
 // ── Main ──────────────────────────────────────
 export default function AdminPage() {
@@ -48,7 +66,7 @@ export default function AdminPage() {
   }, []);
 
   useEffect(() => {
-    if (tab === "users" && users.length === 0) fetchUsers();
+    if ((tab === "users" || tab === "mainpage") && users.length === 0) fetchUsers();
   }, [tab]);
 
   const fetchDashboard = async () => {
@@ -111,7 +129,8 @@ export default function AdminPage() {
           {([
             { key: "dashboard", label: "대시보드" },
             { key: "users", label: "회원 관리" },
-          { key: "storage", label: "파일 관리" },
+            { key: "storage", label: "파일 관리" },
+            { key: "mainpage", label: "메인페이지" },
           ] as { key: Tab; label: string }[]).map(item => (
             <button key={item.key} onClick={() => setTab(item.key)} style={{
               width: "100%", textAlign: "left", padding: "10px 20px", background: "transparent",
@@ -137,6 +156,7 @@ export default function AdminPage() {
           <Dashboard stats={stats} recentSignups={recentSignups} recentUploads={recentUploads} />
         )}
         {tab === "storage" && <StorageTab authHeader={authHeader} />}
+        {tab === "mainpage" && <MainPageTab authHeader={authHeader} users={users} />}
         {tab === "users" && (
           <UsersTab
             users={filteredUsers}
@@ -529,6 +549,305 @@ function StorageTab({ authHeader }: { authHeader: { headers: { Authorization: st
           </div>
         )
       )}
+    </div>
+  );
+}
+
+// ── 메인페이지 관리 ──────────────────────────────
+function MainPageTab({
+  authHeader,
+  users,
+}: {
+  authHeader: { headers: { Authorization: string } };
+  users: AdminUser[];
+}) {
+  const [settings, setSettings] = useState<AdminMainPageSettings | null>(null);
+  const [saving, setSaving] = useState<string | null>(null);
+  const [saveResult, setSaveResult] = useState<Record<string, "ok" | "err" | null>>({
+    text: null, spotlight: null, cards: null,
+  });
+
+  const emptyText = { hero_title: "", hero_subtitle: "", hero_bg1_url: "", hero_bg2_url: "", discover_subtitle: "", cta_title: "", cta_subtitle: "" };
+  const emptySpot = { subtitle: "", artist_id: "" as string, image_url: "", title: "", artist_name: "", genre: "" };
+  const emptyCards = [1, 2, 3, 4].map((s) => ({ slot_order: s, artist_id: "", image_url: "" }));
+
+  const [textForm, setTextForm] = useState(emptyText);
+  const [savedText, setSavedText] = useState(emptyText);
+
+  const [spotForm, setSpotForm] = useState(emptySpot);
+  const [savedSpot, setSavedSpot] = useState(emptySpot);
+
+  const [cardForms, setCardForms] = useState(emptyCards);
+  const [savedCards, setSavedCards] = useState(emptyCards);
+
+  const isTextDirty = JSON.stringify(textForm) !== JSON.stringify(savedText);
+  const isSpotDirty = JSON.stringify(spotForm) !== JSON.stringify(savedSpot);
+  const isCardsDirty = JSON.stringify(cardForms) !== JSON.stringify(savedCards);
+
+  const notify = (key: string, ok: boolean) => {
+    setSaveResult((p) => ({ ...p, [key]: ok ? "ok" : "err" }));
+    setTimeout(() => setSaveResult((p) => ({ ...p, [key]: null })), 2500);
+  };
+
+  const applyData = (data: AdminMainPageSettings) => {
+    setSettings(data);
+    const t = {
+      hero_title: data.content.hero_title,
+      hero_subtitle: data.content.hero_subtitle,
+      hero_bg1_url: data.content.hero_bg1_url ?? "",
+      hero_bg2_url: data.content.hero_bg2_url ?? "",
+      discover_subtitle: data.content.discover_subtitle,
+      cta_title: data.content.cta_title,
+      cta_subtitle: data.content.cta_subtitle,
+    };
+    const s = {
+      subtitle: data.spotlight.subtitle,
+      artist_id: data.spotlight.artist_id ? String(data.spotlight.artist_id) : "",
+      image_url: data.spotlight.image_url ?? "",
+      title: data.spotlight.title ?? "",
+      artist_name: data.spotlight.artist_name ?? "",
+      genre: data.spotlight.genre ?? "",
+    };
+    const c = [1, 2, 3, 4].map((slot) => {
+      const existing = data.cards.find((card) => card.slot_order === slot);
+      return { slot_order: slot, artist_id: existing?.artist_id ? String(existing.artist_id) : "", image_url: existing?.image_url ?? "" };
+    });
+    setTextForm(t); setSavedText(t);
+    setSpotForm(s); setSavedSpot(s);
+    setCardForms(c); setSavedCards(c);
+  };
+
+  const fetchSettings = async () => {
+    const res = await axios.get(`${BACKEND_URL}/admin/main-page`, authHeader).catch(() => null);
+    if (res) applyData(res.data);
+  };
+
+  useEffect(() => { fetchSettings(); }, []);
+
+  const saveText = async () => {
+    setSaving("text");
+    const ok = await axios.patch(`${BACKEND_URL}/admin/main-page/content`, textForm, authHeader).then(() => true).catch(() => false);
+    setSaving(null);
+    if (ok) setSavedText(textForm);
+    notify("text", ok);
+  };
+
+  const saveSpotlight = async () => {
+    setSaving("spotlight");
+    const body: Record<string, unknown> = {
+      subtitle: spotForm.subtitle,
+      image_url: spotForm.image_url || null,
+      title: spotForm.title || null,
+      artist_name: spotForm.artist_name || null,
+      genre: spotForm.genre || null,
+    };
+    if (spotForm.artist_id) { body.artist_id = Number(spotForm.artist_id); }
+    else { body.clear_artist = true; }
+    const ok = await axios.patch(`${BACKEND_URL}/admin/main-page/spotlight`, body, authHeader).then(() => true).catch(() => false);
+    if (ok) { const res = await axios.get(`${BACKEND_URL}/admin/main-page`, authHeader).catch(() => null); if (res) applyData(res.data); }
+    setSaving(null);
+    notify("spotlight", ok);
+  };
+
+  const saveCards = async () => {
+    setSaving("cards");
+    const cards = cardForms.filter((c) => c.artist_id || c.image_url).map((c) => ({
+      slot_order: c.slot_order, artist_id: c.artist_id ? Number(c.artist_id) : null, image_url: c.image_url || null,
+    }));
+    const ok = await axios.patch(`${BACKEND_URL}/admin/main-page/discover-cards`, { cards }, authHeader).then(() => true).catch(() => false);
+    if (ok) { const res = await axios.get(`${BACKEND_URL}/admin/main-page`, authHeader).catch(() => null); if (res) applyData(res.data); }
+    setSaving(null);
+    notify("cards", ok);
+  };
+
+  const inputStyle: React.CSSProperties = {
+    width: "100%", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.12)",
+    borderRadius: 6, padding: "8px 10px", color: "#fff", fontSize: 12, boxSizing: "border-box",
+  };
+  const labelStyle: React.CSSProperties = {
+    fontSize: 11, color: "rgba(255,255,255,0.4)", display: "block", marginBottom: 4,
+  };
+
+  const SaveButton = ({ sKey, dirty, onClick }: { sKey: string; dirty: boolean; onClick: () => void }) => {
+    const isSaving = saving === sKey;
+    const result = saveResult[sKey];
+    const label = isSaving ? "저장 중..." : result === "ok" ? "✓ 저장 완료" : result === "err" ? "✗ 저장 실패" : dirty ? "저장" : "변경 없음";
+    const borderColor = isSaving ? "rgba(255,255,255,0.1)" : result === "ok" ? "rgba(74,222,128,0.7)" : result === "err" ? "rgba(248,113,113,0.7)" : dirty ? "rgba(74,222,128,0.5)" : "rgba(255,255,255,0.1)";
+    const color = isSaving ? "rgba(255,255,255,0.3)" : result === "ok" ? "#4ade80" : result === "err" ? "#f87171" : dirty ? "#4ade80" : "rgba(255,255,255,0.25)";
+    return (
+      <button
+        onClick={onClick}
+        disabled={isSaving || (!dirty && !result)}
+        style={{ ...actionBtn, width: "auto", padding: "7px 18px", fontSize: 12, marginTop: 12, borderColor, color, cursor: (isSaving || (!dirty && !result)) ? "default" : "pointer" }}
+      >
+        {label}
+      </button>
+    );
+  };
+
+  const userOptions = users.filter((u) => u.role !== "ADMIN");
+
+  return (
+    <div>
+      <h2 style={pageTitle}>메인페이지 관리</h2>
+
+      <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+
+        {/* ① 텍스트 편집 */}
+        <div style={panel}>
+          <div style={panelTitle}>텍스트 편집</div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+            {([
+              { key: "hero_title", label: "Hero 제목" },
+              { key: "hero_bg1_url", label: "배경 이미지 1 URL (레이어 1)" },
+              { key: "hero_bg2_url", label: "배경 이미지 2 URL (레이어 2)" },
+              { key: "discover_subtitle", label: "Discover 서브타이틀" },
+              { key: "cta_subtitle", label: "CTA 부제" },
+            ] as { key: keyof typeof textForm; label: string }[]).map(({ key, label }) => (
+              <div key={key}>
+                <label style={labelStyle}>{label}</label>
+                <input
+                  style={inputStyle}
+                  value={textForm[key]}
+                  onChange={(e) => setTextForm((p) => ({ ...p, [key]: e.target.value }))}
+                />
+              </div>
+            ))}
+            {([
+              { key: "hero_subtitle", label: "Hero 부제 (\\n으로 줄바꿈)" },
+              { key: "cta_title", label: "CTA 제목 (\\n으로 줄바꿈)" },
+            ] as { key: keyof typeof textForm; label: string }[]).map(({ key, label }) => (
+              <div key={key}>
+                <label style={labelStyle}>{label}</label>
+                <textarea
+                  style={{ ...inputStyle, resize: "vertical", minHeight: 64 }}
+                  value={textForm[key]}
+                  onChange={(e) => setTextForm((p) => ({ ...p, [key]: e.target.value }))}
+                />
+              </div>
+            ))}
+          </div>
+          <SaveButton sKey="text" dirty={isTextDirty} onClick={saveText} />
+        </div>
+
+        {/* ② Spotlight 앨범 */}
+        <div style={panel}>
+          <div style={panelTitle}>Spotlight 앨범</div>
+          <div style={{ display: "flex", gap: 16 }}>
+            {/* 미리보기 */}
+            <div style={{ flexShrink: 0 }}>
+              {settings?.spotlight.resolved_url ? (
+                <img
+                  src={settings.spotlight.resolved_url}
+                  alt="spotlight"
+                  style={{ width: 100, height: 100, objectFit: "cover", borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)" }}
+                />
+              ) : (
+                <div style={{ width: 100, height: 100, borderRadius: 8, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <span style={{ fontSize: 10, color: "rgba(255,255,255,0.3)" }}>미리보기</span>
+                </div>
+              )}
+            </div>
+
+            {/* 폼 */}
+            <div style={{ flex: 1, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+              <div>
+                <label style={labelStyle}>서브타이틀</label>
+                <input style={inputStyle} value={spotForm.subtitle}
+                  onChange={(e) => setSpotForm((p) => ({ ...p, subtitle: e.target.value }))} />
+              </div>
+              <div>
+                <label style={labelStyle}>아티스트 선택 (썸네일 자동 적용)</label>
+                <select
+                  style={{ ...inputStyle, cursor: "pointer" }}
+                  value={spotForm.artist_id}
+                  onChange={(e) => setSpotForm((p) => ({ ...p, artist_id: e.target.value }))}
+                >
+                  <option value="">-- 직접 입력 --</option>
+                  {userOptions.map((u) => (
+                    <option key={u.id} value={String(u.id)}>
+                      {u.nickname} ({u.email})
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label style={labelStyle}>직접 이미지 URL (아티스트 미선택 시)</label>
+                <input style={inputStyle} value={spotForm.image_url}
+                  onChange={(e) => setSpotForm((p) => ({ ...p, image_url: e.target.value }))}
+                  placeholder="https://..." />
+              </div>
+              <div>
+                <label style={labelStyle}>제목</label>
+                <input style={inputStyle} value={spotForm.title}
+                  onChange={(e) => setSpotForm((p) => ({ ...p, title: e.target.value }))} />
+              </div>
+              <div>
+                <label style={labelStyle}>아티스트명 (표시용)</label>
+                <input style={inputStyle} value={spotForm.artist_name}
+                  onChange={(e) => setSpotForm((p) => ({ ...p, artist_name: e.target.value }))} />
+              </div>
+              <div>
+                <label style={labelStyle}>장르</label>
+                <input style={inputStyle} value={spotForm.genre}
+                  onChange={(e) => setSpotForm((p) => ({ ...p, genre: e.target.value }))} />
+              </div>
+            </div>
+          </div>
+          <SaveButton sKey="spotlight" dirty={isSpotDirty} onClick={saveSpotlight} />
+        </div>
+
+        {/* ③ Discover 카드 4개 */}
+        <div style={panel}>
+          <div style={panelTitle}>Discover 카드 (슬롯 1~4)</div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+            {cardForms.map((card, idx) => {
+              const resolvedUrl = settings?.cards.find((c) => c.slot_order === card.slot_order)?.resolved_url;
+              return (
+                <div key={card.slot_order} style={{ ...panel, display: "flex", gap: 10, padding: 12 }}>
+                  {/* 미리보기 */}
+                  {resolvedUrl ? (
+                    <img src={resolvedUrl} alt={`slot${card.slot_order}`}
+                      style={{ width: 64, height: 64, objectFit: "cover", borderRadius: 6, flexShrink: 0, border: "1px solid rgba(255,255,255,0.1)" }} />
+                  ) : (
+                    <div style={{ width: 64, height: 64, borderRadius: 6, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      <span style={{ fontSize: 9, color: "rgba(255,255,255,0.3)" }}>슬롯{card.slot_order}</span>
+                    </div>
+                  )}
+                  <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 6 }}>
+                    <div>
+                      <label style={labelStyle}>슬롯 {card.slot_order} — 아티스트 선택</label>
+                      <select
+                        style={{ ...inputStyle, cursor: "pointer" }}
+                        value={card.artist_id}
+                        onChange={(e) => setCardForms((prev) => prev.map((c, i) => i === idx ? { ...c, artist_id: e.target.value } : c))}
+                      >
+                        <option value="">-- 직접 입력 --</option>
+                        {userOptions.map((u) => (
+                          <option key={u.id} value={String(u.id)}>
+                            {u.nickname}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label style={labelStyle}>직접 이미지 URL</label>
+                      <input
+                        style={inputStyle}
+                        value={card.image_url}
+                        placeholder="https://..."
+                        onChange={(e) => setCardForms((prev) => prev.map((c, i) => i === idx ? { ...c, image_url: e.target.value } : c))}
+                      />
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          <SaveButton sKey="cards" dirty={isCardsDirty} onClick={saveCards} />
+        </div>
+
+      </div>
     </div>
   );
 }

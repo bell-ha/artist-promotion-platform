@@ -58,6 +58,18 @@ async def init_db():
             )
         )
 
+        # main_page_content 테이블에 배경 이미지 컬럼 추가 (이미 있으면 스킵)
+        await conn.execute(
+            __import__("sqlalchemy").text(
+                "ALTER TABLE main_page_content ADD COLUMN IF NOT EXISTS hero_bg1_url VARCHAR"
+            )
+        )
+        await conn.execute(
+            __import__("sqlalchemy").text(
+                "ALTER TABLE main_page_content ADD COLUMN IF NOT EXISTS hero_bg2_url VARCHAR"
+            )
+        )
+
         # ALTER TABLE DEFAULT 'free'(소문자)로 삽입된 기존 데이터를 SQLAlchemy enum 이름(대문자)으로 통일
         await conn.execute(
             __import__("sqlalchemy").text(

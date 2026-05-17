@@ -1,21 +1,37 @@
 import { ASSETS } from "../lib/assets";
 
-export default function HeroSection() {
+interface HeroSectionProps {
+  title?: string;
+  subtitle?: string;
+  bg1Url?: string | null;
+  bg2Url?: string | null;
+}
+
+const DEFAULT_TITLE = "가치를 위한, 기록의 첫 걸음";
+const DEFAULT_SUBTITLE =
+  "가격은 협상의 결과이고, 가치는 존재의 본질입니다. SEIHI는 아티스트의 가치를 지키는 플랫폼입니다.\n영광스러운 첫 시작을 저희와 함께해주세요.";
+
+export default function HeroSection({
+  title = DEFAULT_TITLE,
+  subtitle = DEFAULT_SUBTITLE,
+  bg1Url,
+  bg2Url,
+}: HeroSectionProps) {
   return (
     <section
       className="relative overflow-hidden h-[897px] max-md:h-[480px] bg-hero-bg"
     >
-      {/* 레이어 1: hero-bg-1 — 블러 베이스 */}
+      {/* 레이어 1: DB URL 우선, 없으면 로컬 에셋 */}
       <img
-        src={ASSETS.heroBg1}
+        src={bg1Url || ASSETS.heroBg1}
         alt=""
         aria-hidden="true"
         className="absolute inset-0 w-full h-full object-cover"
       />
 
-      {/* 레이어 2: hero-bg-2 — 그 위에 겹침 */}
+      {/* 레이어 2: DB URL 우선, 없으면 로컬 에셋 */}
       <img
-        src={ASSETS.heroBg2}
+        src={bg2Url || ASSETS.heroBg2}
         alt=""
         aria-hidden="true"
         className="absolute inset-0 w-full h-full object-cover"
@@ -38,14 +54,17 @@ export default function HeroSection() {
             textShadow: "-1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 10px 30px rgba(0,0,0,.55)",
           }}
         >
-          가치를 위한, 기록의 첫 걸음
+          {title}
         </h1>
         <p
           className="mt-[86px] max-md:mt-[32px] font-inter font-medium text-[15px] max-md:text-[13px] text-hero-sub opacity-[0.83] leading-[1.45] tracking-[0.38px]"
         >
-          가격은 협상의 결과이고, 가치는 존재의 본질입니다. SEIHI는 아티스트의 가치를 지키는 플랫폼입니다.
-          <br className="max-md:hidden" />
-          영광스러운 첫 시작을 저희와 함께해주세요.
+          {subtitle.split("\n").map((line, i) => (
+            <span key={i}>
+              {line}
+              {i < subtitle.split("\n").length - 1 && <br className="max-md:hidden" />}
+            </span>
+          ))}
         </p>
       </div>
     </section>

@@ -1,6 +1,16 @@
 import { ASSETS } from "../lib/assets";
 
-export default function CTASection({ variant = "large" }: { variant?: "large" | "small" }) {
+export default function CTASection({
+  variant = "large",
+  ctaTitle,
+  ctaSubtitle,
+}: {
+  variant?: "large" | "small";
+  ctaTitle?: string;
+  ctaSubtitle?: string;
+}) {
+  const displayTitle = ctaTitle || "새로운 사운드를 만나는\n가장 좋은 방식";
+  const displaySubtitle = ctaSubtitle || "다양한 장르의 음악 포트폴리오를 한 화면에서 탐색해보세요.";
   if (variant === "small") {
     return (
       <section className="bg-black flex items-center justify-between max-md:flex-col max-md:items-center px-[110px] max-md:px-5 py-[80px] max-md:py-[48px] max-md:gap-6">
@@ -57,13 +67,6 @@ export default function CTASection({ variant = "large" }: { variant?: "large" | 
 
   return (
     <section className="relative">
-      {/* 배경 이미지 */}
-      <img
-        src={ASSETS.ctaBg}
-        alt=""
-        aria-hidden="true"
-        className="absolute inset-0 w-full h-full object-cover"
-      />
       {/* 어두운 오버레이 */}
       <div className="absolute inset-0 bg-cta-gradient" />
 
@@ -75,16 +78,19 @@ export default function CTASection({ variant = "large" }: { variant?: "large" | 
             textShadow: "0 5px 4px rgba(255,255,255,0.58), -1px -1px 0 rgba(0,0,0,0.2), 1px -1px 0 rgba(0,0,0,0.2), -1px 1px 0 rgba(0,0,0,0.2), 1px 1px 0 rgba(0,0,0,0.2)",
           }}
         >
-          새로운 사운드를 만나는
-          <br />
-          가장 좋은 방식
+          {displayTitle.split("\n").map((line, i) => (
+            <span key={i}>
+              {line}
+              {i < displayTitle.split("\n").length - 1 && <br />}
+            </span>
+          ))}
         </h3>
 
         <p
           className="mt-[59px] max-md:mt-[24px] font-medium font-noto text-[19px] max-md:text-[14px] leading-[1.45] tracking-[-0.12px]"
           style={{ color: "rgba(206,205,205,0.55)" }}
         >
-          다양한 장르의 음악 포트폴리오를 한 화면에서 탐색해보세요.
+          {displaySubtitle}
         </p>
 
         {/* 액션 영역 */}

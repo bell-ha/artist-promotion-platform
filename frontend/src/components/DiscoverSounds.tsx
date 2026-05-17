@@ -1,15 +1,15 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ASSETS } from "../lib/assets";
 
-const BASE_CARDS = [
-  { src: ASSETS.discoverCard1, alt: "Discover album 1" },
-  { src: ASSETS.discoverCard2, alt: "Discover album 2" },
-  { src: ASSETS.discoverCard3, alt: "Discover album 3" },
-  { src: ASSETS.discoverCard4, alt: "Discover album 4" },
-];
-const CARDS = [...BASE_CARDS, ...BASE_CARDS, ...BASE_CARDS];
-const TOTAL = CARDS.length;    // 12
-const STEP_DEG = 360 / TOTAL;  // 30
+interface DiscoverCard {
+  slot_order: number;
+  image_url: string;
+}
+
+interface DiscoverSoundsProps {
+  subtitle?: string;
+  cards?: DiscoverCard[];
+}
 
 // 뷰포트별 캐러셀 파라미터
 const DESKTOP = { RADIUS: 466, CARD_W: 216, CARD_H: 200 };
@@ -18,7 +18,17 @@ const MOBILE  = { RADIUS: 260, CARD_W: 130, CARD_H: 120 };
 const TEXT_SHADOW_BASE = "-1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 4px 2px rgba(255,255,255,0.25)";
 const TEXT_SHADOW_NEW = `${TEXT_SHADOW_BASE}, 0 0 40px rgba(255,255,255,0.35)`;
 
-export default function DiscoverSounds() {
+const LOCAL_CARDS = [
+  { src: ASSETS.discoverCard1, alt: "Discover album 1" },
+  { src: ASSETS.discoverCard2, alt: "Discover album 2" },
+  { src: ASSETS.discoverCard3, alt: "Discover album 3" },
+  { src: ASSETS.discoverCard4, alt: "Discover album 4" },
+];
+
+export default function DiscoverSounds({
+  subtitle = "다양한 장르의 사운드를 한 화면에서",
+  cards,
+}: DiscoverSoundsProps) {
   const sectionRef = useRef<HTMLDivElement>(null);
   const [newTriggered, setNewTriggered] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
@@ -28,6 +38,24 @@ export default function DiscoverSounds() {
   const isDragging = useRef(false);
   const dragStartX = useRef(0);
   const dragStartOffset = useRef(0);
+
+  // DB 카드가 있으면 사용, 없으면 로컬 이미지 폴백
+  const baseCards = useMemo(() => {
+    if (cards && cards.length > 0) {
+      return [...cards]
+        .sort((a, b) => a.slot_order - b.slot_order)
+        .map((c) => ({ src: c.image_url, alt: `Album ${c.slot_order}` }));
+    }
+    return LOCAL_CARDS;
+  }, [cards]);
+
+  // 3D 캐러셀은 카드를 3회 반복해서 연속감을 만듦
+  const carouselCards = useMemo(
+    () => [...baseCards, ...baseCards, ...baseCards],
+    [baseCards]
+  );
+  const total = carouselCards.length;
+  const stepDeg = 360 / total;
 
   // 뷰포트 크기 감지
   useEffect(() => {
@@ -55,13 +83,16 @@ export default function DiscoverSounds() {
   }, []);
 
   // 캐러셀 렌더 + 드래그 + 터치 이벤트
+  // carouselCards / isMobile 바뀔 때마다 재적용
   useEffect(() => {
     const { RADIUS, CARD_W, CARD_H } = isMobile ? MOBILE : DESKTOP;
+    const currentTotal = carouselCards.length;
+    const currentStep = 360 / currentTotal;
 
     function applyTransforms() {
-      const cards = carouselRef.current?.querySelectorAll<HTMLElement>("[data-card]");
-      cards?.forEach((el, i) => {
-        const raw = (i * STEP_DEG + offsetRef.current) % 360;
+      const els = carouselRef.current?.querySelectorAll<HTMLElement>("[data-card]");
+      els?.forEach((el, i) => {
+        const raw = (i * currentStep + offsetRef.current) % 360;
         const norm = raw > 180 ? raw - 360 : raw;
         const abs = Math.abs(norm);
         const cos = Math.cos(abs * Math.PI / 180);
@@ -78,7 +109,6 @@ export default function DiscoverSounds() {
 
     applyTransforms();
 
-    // 마우스 이벤트
     function onMouseDown(e: MouseEvent) {
       isDragging.current = true;
       dragStartX.current = e.clientX;
@@ -95,8 +125,6 @@ export default function DiscoverSounds() {
       isDragging.current = false;
       document.body.style.userSelect = "";
     }
-
-    // 터치 이벤트
     function onTouchStart(e: TouchEvent) {
       isDragging.current = true;
       dragStartX.current = e.touches[0].clientX;
@@ -127,7 +155,7 @@ export default function DiscoverSounds() {
       window.removeEventListener("mousemove", onMouseMove);
       window.removeEventListener("mouseup", onMouseUp);
     };
-  }, [isMobile]);
+  }, [isMobile, carouselCards]);
 
   const { RADIUS, CARD_W, CARD_H } = isMobile ? MOBILE : DESKTOP;
 
@@ -146,16 +174,13 @@ export default function DiscoverSounds() {
             DISCOVER
           </span>
 
-          {/* NEW 래퍼 */}
           <span style={{ position: "relative", display: "inline-block" }}>
-            {/* phantom: 공간 확보 */}
             <span
               className="font-bold font-noto text-[38px] max-md:text-[24px] leading-[1.16] tracking-[5.76px]"
               style={{ visibility: "hidden", display: "block" }}
             >
               NEW
             </span>
-            {/* 실제 NEW */}
             <span
               className={`font-bold font-noto text-[38px] max-md:text-[24px] leading-[1.16] tracking-[5.76px]${newTriggered ? " new-float-trigger" : ""}`}
               style={{
@@ -186,7 +211,7 @@ export default function DiscoverSounds() {
           className="mb-[64px] max-md:mb-[32px] font-medium font-noto text-[22px] max-md:text-[15px] text-discover-sub leading-[1.2] tracking-[-0.56px]"
           style={{ textShadow: "0 4px 2px rgba(255,255,255,0.25)" }}
         >
-          다양한 장르의 사운드를 한 화면에서
+          {subtitle}
         </p>
       </div>
 
@@ -212,8 +237,8 @@ export default function DiscoverSounds() {
             transformStyle: "preserve-3d",
           }}
         >
-          {CARDS.map((card, i) => {
-            const initRaw = (i * STEP_DEG) % 360;
+          {carouselCards.map((card, i) => {
+            const initRaw = (i * stepDeg) % 360;
             const initNorm = initRaw > 180 ? initRaw - 360 : initRaw;
             const initAbs = Math.abs(initNorm);
             const initCos = Math.cos(initAbs * Math.PI / 180);

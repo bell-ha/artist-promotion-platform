@@ -1,6 +1,22 @@
 import { ASSETS } from "../lib/assets";
 
-export default function SpotlightAlbum() {
+interface SpotlightAlbumProps {
+  subtitle?: string;
+  imageUrl?: string | null;
+  title?: string | null;
+  artistName?: string | null;
+  genre?: string | null;
+}
+
+export default function SpotlightAlbum({
+  subtitle = "이번 달 가장 주목할 사운드 컬렉션",
+  imageUrl,
+  title = "Album / Portfolio Title",
+  artistName = "Artist Name",
+  genre = "Genre",
+}: SpotlightAlbumProps) {
+  const displayImage = imageUrl || ASSETS.spotlightAlbum;
+
   return (
     <section className="bg-spotlight-gradient">
       <div className="w-full flex justify-center">
@@ -26,7 +42,7 @@ export default function SpotlightAlbum() {
             className="mt-2 font-normal font-noto text-[24px] max-md:text-[16px] text-spotlight-sub"
             style={{ textShadow: "0 0px 30px rgba(255,255,255,0.4)" }}
           >
-            이번 달 가장 주목할 사운드 컬렉션
+            {subtitle}
           </p>
 
           {/* 앨범 이미지 */}
@@ -38,7 +54,7 @@ export default function SpotlightAlbum() {
               }}
             >
               <img
-                src={ASSETS.spotlightAlbum}
+                src={displayImage}
                 alt="Spotlight Album"
                 className="w-full h-full object-cover"
               />
@@ -51,13 +67,13 @@ export default function SpotlightAlbum() {
           {/* 앨범 메타 */}
           <div className="flex flex-col items-center font-noto text-[20px] max-md:text-[16px]">
             <div className="text-white font-bold">
-              Album / Portfolio Title
+              {title || "Album / Portfolio Title"}
             </div>
             <div className="font-medium" style={{ color: "rgba(255,255,255,0.7)" }}>
-              Artist Name
+              {artistName || "Artist Name"}
             </div>
             <div className="font-normal" style={{ color: "rgba(255,255,255,0.55)" }}>
-              Genre
+              {genre || "Genre"}
             </div>
           </div>
         </div>
