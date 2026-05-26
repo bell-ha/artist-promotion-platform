@@ -196,7 +196,7 @@ async def update_user_plan(
 ):
     user = await _get_user_or_404(user_id, session)
     try:
-        user.subscription_plan = SubscriptionPlan(data.plan.lower())
+        user.subscription_plan = SubscriptionPlan(data.plan.upper())
     except ValueError:
         raise HTTPException(status_code=400, detail="유효하지 않은 플랜입니다.")
     await session.commit()

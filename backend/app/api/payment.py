@@ -31,7 +31,7 @@ async def subscribe(
     current_user: User = Depends(get_current_user),
 ):
     try:
-        plan = SubscriptionPlan(data.plan.lower())
+        plan = SubscriptionPlan(data.plan.upper())
     except ValueError:
         raise HTTPException(status_code=400, detail="유효하지 않은 플랜입니다.")
 

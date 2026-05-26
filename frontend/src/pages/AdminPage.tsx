@@ -101,8 +101,9 @@ export default function AdminPage() {
 
   const changePlan = async (userId: number, plan: string) => {
     await axios.patch(`${BACKEND_URL}/admin/users/${userId}/plan`, { plan }, authHeader);
-    setUsers(prev => prev.map(u => u.id === userId ? { ...u, subscription_plan: plan } : u));
-    if (selectedUser?.id === userId) setSelectedUser(prev => prev ? { ...prev, subscription_plan: plan } : null);
+    const normalized = plan.toUpperCase();
+    setUsers(prev => prev.map(u => u.id === userId ? { ...u, subscription_plan: normalized } : u));
+    if (selectedUser?.id === userId) setSelectedUser(prev => prev ? { ...prev, subscription_plan: normalized } : null);
   };
 
   const deleteUser = async (userId: number) => {
@@ -854,12 +855,13 @@ function MainPageTab({
 
 // ── 공통 컴포넌트 ──────────────────────────────
 function PlanBadge({ plan }: { plan: string }) {
+  const key = plan.toLowerCase();
   const colors: Record<string, string> = {
     premium: "#ffc800", standard: "#60a5fa", free: "rgba(255,255,255,0.3)",
   };
   return (
-    <span style={{ fontSize: 10, padding: "2px 6px", borderRadius: 3, border: `1px solid ${colors[plan] ?? "rgba(255,255,255,0.2)"}`, color: colors[plan] ?? "rgba(255,255,255,0.4)" }}>
-      {plan}
+    <span style={{ fontSize: 10, padding: "2px 6px", borderRadius: 3, border: `1px solid ${colors[key] ?? "rgba(255,255,255,0.2)"}`, color: colors[key] ?? "rgba(255,255,255,0.4)" }}>
+      {key.toUpperCase()}
     </span>
   );
 }

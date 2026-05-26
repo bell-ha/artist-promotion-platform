@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ASSETS } from "../lib/assets";
+import { isTokenExpired, clearSession } from "../lib/token";
 import type { User, AuthMode, CareerCategory } from "../types/auth";
 import AuthModals from "./AuthModals";
 
@@ -27,7 +28,11 @@ export default function Header() {
     const token = localStorage.getItem("token");
     const nickname = localStorage.getItem("nickname");
     if (token && nickname && !nickname.startsWith("User_")) {
-      setUser({ nickname });
+      if (isTokenExpired(token)) {
+        clearSession();
+      } else {
+        setUser({ nickname });
+      }
     }
   }, []);
 
