@@ -4,11 +4,19 @@ export default function CTASection({
   variant = "large",
   ctaTitle,
   ctaSubtitle,
+  onSearch,
 }: {
   variant?: "large" | "small";
   ctaTitle?: string;
   ctaSubtitle?: string;
+  onSearch?: (q: string) => void;
 }) {
+  const handleKey = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter" && onSearch) {
+      const q = e.currentTarget.value.trim();
+      if (q) onSearch(q);
+    }
+  };
   const displayTitle = ctaTitle || "새로운 사운드를 만나는\n가장 좋은 방식";
   const displaySubtitle = ctaSubtitle || "다양한 장르의 음악 포트폴리오를 한 화면에서 탐색해보세요.";
   if (variant === "small") {
@@ -46,6 +54,7 @@ export default function CTASection({
             style={{ caretColor: "white" }}
             placeholder="Search by artist or genre"
             type="search"
+            onKeyDown={handleKey}
           />
         </label>
 
@@ -110,6 +119,7 @@ export default function CTASection({
               style={{ caretColor: "white" }}
               placeholder="Search by artist or genre"
               type="search"
+              onKeyDown={handleKey}
             />
           </label>
         </div>

@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
-from sqlalchemy import delete
+from sqlalchemy import delete, or_
 
 from app.database import get_session
 from app.models.user import User
@@ -793,6 +793,54 @@ async def get_public_profile_by_id(
         }
 
     raise HTTPException(status_code=404, detail="활성 템플릿이 없습니다.")
+
+
+# ── 아티스트 검색 ──────────────────────────────
+@router.get("/search")
+async def search_artists(q: str = "", session: AsyncSession = Depends(get_session)):
+    if not q.strip():
+        return []
+    pattern = f"%{q.strip()}%"
+
+    t1_rows = (await session.execute(
+        select(User.id, User.nickname, NameSection.name, NameSection.english_name, NameSection.thumbnail_url)
+        .join(NameSection, NameSection.user_id == User.id)
+        .where(User.is_active == True)
+        .where(User.active_template == 1)
+        .where(or_(
+            User.nickname.ilike(pattern),
+            NameSection.name.ilike(pattern),
+            NameSection.english_name.ilike(pattern),
+        ))
+        .limit(20)
+    )).all()
+
+    t2_rows = (await session.execute(
+        select(User.id, User.nickname, T2NameSection.name, T2NameSection.english_name, T2NameSection.thumbnail_url)
+        .join(T2NameSection, T2NameSection.user_id == User.id)
+        .where(User.is_active == True)
+        .where(User.active_template == 2)
+        .where(or_(
+            User.nickname.ilike(pattern),
+            T2NameSection.name.ilike(pattern),
+            T2NameSection.english_name.ilike(pattern),
+        ))
+        .limit(20)
+    )).all()
+
+    seen = set()
+    results = []
+    for r in list(t1_rows) + list(t2_rows):
+        if r.id not in seen:
+            seen.add(r.id)
+            results.append({
+                "id": r.id,
+                "nickname": r.nickname,
+                "name": r.name,
+                "english_name": r.english_name,
+                "thumbnail_url": r.thumbnail_url,
+            })
+    return results[:20]
 
 
 # ── 카테고리별 아티스트 공개 목록 ──────────────

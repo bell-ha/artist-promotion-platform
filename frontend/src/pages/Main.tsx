@@ -6,6 +6,7 @@ import HeroSection from "../components/HeroSection";
 import DiscoverSounds from "../components/DiscoverSounds";
 import SpotlightAlbum from "../components/SpotlightAlbum";
 import CTASection from "../components/CTASection";
+import SearchModal from "../components/SearchModal";
 import { BACKEND_URL } from "../lib/api";
 
 export interface MainPageData {
@@ -28,6 +29,7 @@ export default function Main() {
   const location = useLocation();
   const navigate = useNavigate();
   const [pageData, setPageData] = useState<MainPageData | null>(null);
+  const [searchQuery, setSearchQuery] = useState<string | null>(null);
 
   useEffect(() => {
     if (location.pathname === "/login") {
@@ -66,8 +68,13 @@ export default function Main() {
         <CTASection
           ctaTitle={pageData?.cta.title}
           ctaSubtitle={pageData?.cta.subtitle}
+          onSearch={(q) => setSearchQuery(q)}
         />
       </main>
+
+      {searchQuery && (
+        <SearchModal query={searchQuery} onClose={() => setSearchQuery(null)} />
+      )}
     </>
   );
 }
