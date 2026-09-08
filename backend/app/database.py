@@ -54,7 +54,15 @@ async def init_db():
         # users 테이블에 subscription_plan 컬럼 추가
         await conn.execute(
             __import__("sqlalchemy").text(
-                "ALTER TABLE users ADD COLUMN IF NOT EXISTS subscription_plan VARCHAR NOT NULL DEFAULT 'free'"
+                "ALTER TABLE users ADD COLUMN IF NOT EXISTS subscription_plan VARCHAR NOT NULL DEFAULT 'FREE'"
+            )
+        )
+
+        # 이미 컬럼이 있는 DB는 위 ADD COLUMN이 건너뛰므로 기본값이 소문자 'free'로
+        # 남아 있다. enum(subscriptionplan)에 없는 값이라 컬럼을 생략한 INSERT가 실패한다.
+        await conn.execute(
+            __import__("sqlalchemy").text(
+                "ALTER TABLE users ALTER COLUMN subscription_plan SET DEFAULT 'FREE'"
             )
         )
 
@@ -70,13 +78,28 @@ async def init_db():
             )
         )
 
-        # ALTER TABLE DEFAULT 'free'(소문자)로 삽입된 기존 데이터를 SQLAlchemy enum 이름(대문자)으로 통일
-        await conn.execute(
-            __import__("sqlalchemy").text(
-                "UPDATE users SET subscription_plan = UPPER(subscription_plan) "
-                "WHERE subscription_plan IN ('free', 'standard', 'premium')"
+        # ALTER TABLE DEFAULT 'free'(소문자)로 삽입된 기존 데이터를 enum 이름(대문자)으로 통일.
+        #
+        # 이 UPDATE는 컬럼이 VARCHAR일 때를 전제로 쓰였다. 빈 DB에서는 create_all이
+        # 컬럼을 enum(subscriptionplan)으로 만들기 때문에, 문자열 'free'와 비교하는 순간
+        # "invalid input value for enum" 으로 기동 자체가 실패했다.
+        # 그래서 컬럼이 실제로 VARCHAR일 때만 실행한다.
+        sa = __import__("sqlalchemy")
+        col_type = (
+            await conn.execute(
+                sa.text(
+                    "SELECT data_type FROM information_schema.columns "
+                    "WHERE table_name = 'users' AND column_name = 'subscription_plan'"
+                )
             )
-        )
+        ).scalar()
+        if col_type == "character varying":
+            await conn.execute(
+                sa.text(
+                    "UPDATE users SET subscription_plan = UPPER(subscription_plan) "
+                    "WHERE subscription_plan IN ('free', 'standard', 'premium')"
+                )
+            )
 
         # users 삭제 시 포트폴리오 데이터 전체 CASCADE 설정
         await conn.execute(__import__("sqlalchemy").text("""

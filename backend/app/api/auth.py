@@ -1,3 +1,4 @@
+import asyncio
 import os
 import uuid
 import random
@@ -5,7 +6,7 @@ import string
 from datetime import datetime, timedelta
 from typing import Dict, Optional
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from pydantic import BaseModel, EmailStr
@@ -36,8 +37,30 @@ conf = ConnectionConfig(
     USE_CREDENTIALS=True
 )
 
+# ── OTP 저장소 ──────────────────────────────────────────────
+# ⚠️ 프로세스 메모리 dict다 — 워커가 2개 이상이면 send를 받은 워커와
+# verify/signup을 처리하는 워커가 달라 인증이 깨지고, 재배포하면 전부
+# 사라진다. 정석은 작은 테이블(email, code_hash, expires_at, attempts,
+# last_sent_at)로 옮기는 것 — 이건 스키마 변경이 필요해서 별도로
+# 요청해뒀다. 그 전까지는 아래 두 문제를 이 파일 안에서만 막는다:
+#   1) signup이 otp_storage를 한 번도 확인하지 않아 미인증 이메일로
+#      가입이 되는 문제 → verify_otp가 항목을 바로 지우지 않고
+#      "verified" 플래그를 남기고(비밀번호 재설정 흐름과 동일한 패턴),
+#      signup이 그 플래그를 확인·소비하도록 고쳤다.
+#   2) send-otp에 발송 빈도 제한이 없는 문제 → 같은 이메일에 대해
+#      OTP_RESEND_COOLDOWN_SECONDS 안에는 재발송을 막는다. 이건
+#      "같은 이메일로 반복 발송"만 막을 뿐, 서로 다른 임의 주소로
+#      돌아가며 보내는 것까지는 못 막는다 — 그건 이 파일 하나로는
+#      못 막고 IP 기반 레이트리밋(리버스 프록시/게이트웨이) 또는
+#      테이블화 이후 전역 카운터가 필요하다.
+#   추가로, OTP 자체를 무차별 대입하는 것도 원래 막혀 있지 않았어서
+#   OTP_MAX_ATTEMPTS로 시도 횟수도 제한했다(테이블에 attempts 컬럼을
+#   두고 싶다고 하신 것과 같은 이유).
 otp_storage: Dict[str, dict] = {}
 forgot_otp_storage: Dict[str, dict] = {}
+
+OTP_RESEND_COOLDOWN_SECONDS = 60
+OTP_MAX_ATTEMPTS = 5
 
 def _cleanup_expired_otps() -> None:
     now = datetime.now()
@@ -50,6 +73,15 @@ def _cleanup_forgot_otps() -> None:
     expired = [email for email, data in forgot_otp_storage.items() if now > data["expires"]]
     for email in expired:
         del forgot_otp_storage[email]
+
+async def _send_mail_safely(message: MessageSchema) -> None:
+    """BackgroundTasks에서 호출된다 — 응답이 이미 나간 뒤라 실패해도
+    클라이언트에 알릴 방법이 없다. 최소한 서버 로그에는 남긴다."""
+    try:
+        fm = FastMail(conf)
+        await fm.send_message(message)
+    except Exception as e:
+        print(f"[auth] 메일 발송 실패: {e}")
 
 # --- Request 모델 ---
 class EmailSignUpRequest(BaseModel):
@@ -90,11 +122,27 @@ class OtpVerifyRequest(BaseModel):
 # --- API 엔드포인트 ---
 
 @router.post("/send-otp")
-async def send_otp(email: EmailStr):
+async def send_otp(email: EmailStr, background_tasks: BackgroundTasks):
     _cleanup_expired_otps()
+
+    existing = otp_storage.get(email)
+    if existing:
+        elapsed = (datetime.now() - existing["last_sent"]).total_seconds()
+        if elapsed < OTP_RESEND_COOLDOWN_SECONDS:
+            raise HTTPException(
+                status_code=429,
+                detail=f"{int(OTP_RESEND_COOLDOWN_SECONDS - elapsed)}초 후에 다시 시도해주세요."
+            )
+
     otp = "".join(random.choices(string.digits, k=6))
-    otp_storage[email] = {"otp": otp, "expires": datetime.now() + timedelta(minutes=5)}
-    
+    otp_storage[email] = {
+        "otp": otp,
+        "expires": datetime.now() + timedelta(minutes=5),
+        "verified": False,
+        "attempts": 0,
+        "last_sent": datetime.now(),
+    }
+
     html = f"""
     <div style="background-color: #f4f4f4; padding: 50px 20px; font-family: sans-serif;">
         <div style="max-width: 480px; margin: 0 auto; background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.05);">
@@ -113,20 +161,27 @@ async def send_otp(email: EmailStr):
     </div>
     """
     message = MessageSchema(subject="[StudioSeiHa] 인증번호 안내", recipients=[email], body=html, subtype="html")
-    fm = FastMail(conf)
-    await fm.send_message(message)
+    background_tasks.add_task(_send_mail_safely, message)
     return {"message": "success"}
 
 @router.post("/verify-otp")
 async def verify_otp(data: OtpVerifyRequest):
     _cleanup_expired_otps()
     stored = otp_storage.get(data.email)
-    if not stored or stored["otp"] != data.otp:
+    if not stored:
         raise HTTPException(status_code=400, detail="인증번호가 틀렸거나 만료되었습니다.")
     if datetime.now() > stored["expires"]:
         otp_storage.pop(data.email, None)
         raise HTTPException(status_code=400, detail="인증번호가 만료되었습니다.")
-    otp_storage.pop(data.email, None)  # 인증 성공 후 즉시 삭제 (재사용 방지)
+    if stored.get("attempts", 0) >= OTP_MAX_ATTEMPTS:
+        otp_storage.pop(data.email, None)
+        raise HTTPException(status_code=429, detail="시도 횟수를 초과했습니다. 인증번호를 다시 요청해주세요.")
+    if stored["otp"] != data.otp:
+        stored["attempts"] = stored.get("attempts", 0) + 1
+        raise HTTPException(status_code=400, detail="인증번호가 틀렸거나 만료되었습니다.")
+    # 인증 성공 — signup이 확인할 수 있게 항목은 남기고 플래그만 세운다.
+    # (즉시 삭제하면 signup에서 "인증 완료 여부"를 확인할 방법이 없다.)
+    stored["verified"] = True
     return {"status": "verified"}
 
 @router.get("/check-nickname")
@@ -141,6 +196,14 @@ async def email_signup(data: EmailSignUpRequest, session: AsyncSession = Depends
     if len(data.password) < 6:
         raise HTTPException(status_code=400, detail="비밀번호는 6자 이상이어야 합니다.")
 
+    # ── 이메일 인증 확인 ── 이게 없어서 signup을 직접 호출하면 미인증
+    # 이메일로 가입이 됐다. verify-otp를 통과한 적이 있고, 아직 만료
+    # 전이어야 한다.
+    _cleanup_expired_otps()
+    otp_record = otp_storage.get(data.email)
+    if not otp_record or not otp_record.get("verified") or datetime.now() > otp_record["expires"]:
+        raise HTTPException(status_code=400, detail="이메일 인증을 먼저 완료해주세요.")
+
     email_stmt = select(User).where(User.email == data.email)
     email_res = await session.execute(email_stmt)
     if email_res.scalar_one_or_none():
@@ -153,7 +216,7 @@ async def email_signup(data: EmailSignUpRequest, session: AsyncSession = Depends
 
     new_user = User(
         email=data.email,
-        password=get_password_hash(data.password),
+        password=await asyncio.to_thread(get_password_hash, data.password),
         nickname=data.nickname,
         provider=LoginProvider.LOCAL,
         role=UserRole.USER,
@@ -161,6 +224,7 @@ async def email_signup(data: EmailSignUpRequest, session: AsyncSession = Depends
     )
     session.add(new_user)
     await session.commit()
+    otp_storage.pop(data.email, None)  # 재사용 방지 — 인증을 소비했다
     return {"status": "success"}
 
 # --- 일반 로그인 추가 ---
@@ -170,7 +234,7 @@ async def email_login(data: LoginRequest, session: AsyncSession = Depends(get_se
     result = await session.execute(statement)
     user = result.scalar_one_or_none()
 
-    if not user or not user.is_active or not verify_password(data.password, user.password):
+    if not user or not user.is_active or not await asyncio.to_thread(verify_password, data.password, user.password):
         raise HTTPException(status_code=401, detail="이메일 또는 비밀번호가 틀렸습니다.")
 
     access_token = create_access_token(data={"sub": user.email, "role": user.role.value})
@@ -199,7 +263,7 @@ async def google_login(data: SocialTokenRequest, session: AsyncSession = Depends
             temp_nickname = f"User_{uuid.uuid4().hex[:6]}"
             user = User(
                 email=email,
-                nickname=temp_nickname, 
+                nickname=temp_nickname,
                 provider=LoginProvider.GOOGLE,
                 social_id=str(google_id),
                 role=UserRole.USER,
@@ -225,6 +289,11 @@ async def google_login(data: SocialTokenRequest, session: AsyncSession = Depends
         }
     except ValueError:
         raise HTTPException(status_code=400, detail="유효하지 않은 구글 토큰입니다.")
+    except HTTPException:
+        # 위에서 raise한 403(비활성 계정)을 아래 except Exception이 삼켜서
+        # 500 + 내부 예외 문자열로 재포장하고 있었다. 먼저 잡아서 그대로
+        # 내보낸다.
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -246,7 +315,7 @@ async def verify_current_password(
 ):
     if current_user.provider != LoginProvider.LOCAL:
         raise HTTPException(status_code=400, detail="소셜 로그인 계정입니다.")
-    if not verify_password(data.password, current_user.password):
+    if not await asyncio.to_thread(verify_password, data.password, current_user.password):
         raise HTTPException(status_code=400, detail="현재 비밀번호가 틀렸습니다.")
     return {"valid": True}
 
@@ -259,28 +328,39 @@ async def change_password(
 ):
     if current_user.provider != LoginProvider.LOCAL:
         raise HTTPException(status_code=400, detail="소셜 로그인 계정은 비밀번호를 변경할 수 없습니다.")
-    if not verify_password(data.current_password, current_user.password):
+    if not await asyncio.to_thread(verify_password, data.current_password, current_user.password):
         raise HTTPException(status_code=400, detail="현재 비밀번호가 틀렸습니다.")
     if len(data.new_password) < 6:
         raise HTTPException(status_code=400, detail="새 비밀번호는 6자 이상이어야 합니다.")
-    current_user.password = get_password_hash(data.new_password)
+    current_user.password = await asyncio.to_thread(get_password_hash, data.new_password)
     session.add(current_user)
     await session.commit()
     return {"status": "ok"}
 
 
 @router.post("/forgot-password/send-otp")
-async def forgot_password_send_otp(email: EmailStr, session: AsyncSession = Depends(get_session)):
+async def forgot_password_send_otp(email: EmailStr, background_tasks: BackgroundTasks, session: AsyncSession = Depends(get_session)):
     _cleanup_forgot_otps()
     user = (await session.execute(select(User).where(User.email == email))).scalar_one_or_none()
     if not user or user.provider != LoginProvider.LOCAL:
         return {"message": "success"}  # 존재 여부 노출하지 않음
+
+    existing = forgot_otp_storage.get(email)
+    if existing:
+        elapsed = (datetime.now() - existing["last_sent"]).total_seconds()
+        if elapsed < OTP_RESEND_COOLDOWN_SECONDS:
+            raise HTTPException(
+                status_code=429,
+                detail=f"{int(OTP_RESEND_COOLDOWN_SECONDS - elapsed)}초 후에 다시 시도해주세요."
+            )
 
     otp = "".join(random.choices(string.digits, k=6))
     forgot_otp_storage[email] = {
         "otp": otp,
         "expires": datetime.now() + timedelta(minutes=5),
         "verified": False,
+        "attempts": 0,
+        "last_sent": datetime.now(),
     }
 
     html = f"""
@@ -301,8 +381,7 @@ async def forgot_password_send_otp(email: EmailStr, session: AsyncSession = Depe
     </div>
     """
     message = MessageSchema(subject="[StudioSeiHa] 비밀번호 재설정 인증번호", recipients=[email], body=html, subtype="html")
-    fm = FastMail(conf)
-    await fm.send_message(message)
+    background_tasks.add_task(_send_mail_safely, message)
     return {"message": "success"}
 
 
@@ -310,11 +389,17 @@ async def forgot_password_send_otp(email: EmailStr, session: AsyncSession = Depe
 async def forgot_password_verify_otp(data: ForgotPasswordVerifyRequest):
     _cleanup_forgot_otps()
     stored = forgot_otp_storage.get(data.email)
-    if not stored or stored["otp"] != data.otp:
+    if not stored:
         raise HTTPException(status_code=400, detail="인증번호가 틀렸거나 만료되었습니다.")
     if datetime.now() > stored["expires"]:
         forgot_otp_storage.pop(data.email, None)
         raise HTTPException(status_code=400, detail="인증번호가 만료되었습니다.")
+    if stored.get("attempts", 0) >= OTP_MAX_ATTEMPTS:
+        forgot_otp_storage.pop(data.email, None)
+        raise HTTPException(status_code=429, detail="시도 횟수를 초과했습니다. 인증번호를 다시 요청해주세요.")
+    if stored["otp"] != data.otp:
+        stored["attempts"] = stored.get("attempts", 0) + 1
+        raise HTTPException(status_code=400, detail="인증번호가 틀렸거나 만료되었습니다.")
     forgot_otp_storage[data.email]["verified"] = True
     return {"status": "verified"}
 
@@ -335,7 +420,7 @@ async def forgot_password_reset(data: ForgotPasswordResetRequest, session: Async
     if not user or user.provider != LoginProvider.LOCAL:
         raise HTTPException(status_code=400, detail="유효하지 않은 요청입니다.")
 
-    user.password = get_password_hash(data.new_password)
+    user.password = await asyncio.to_thread(get_password_hash, data.new_password)
     session.add(user)
     await session.commit()
     forgot_otp_storage.pop(data.email, None)
