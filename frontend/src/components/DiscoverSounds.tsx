@@ -183,10 +183,17 @@ export default function DiscoverSounds({
       className="w-full pb-[350px] max-md:pb-[120px] relative bg-hero-gradient"
     >
       <div className="max-w-[1280px] mx-auto mt-[246px] max-md:mt-[80px] text-center">
-        {/* 제목 — DISCOVER NEW SOUNDS */}
-        <div className="mb-[25px]" style={{ display: "inline-flex", alignItems: "flex-end", gap: "0.7em" }}>
+        {/* 제목 — DISCOVER NEW SOUNDS
+            390px 기준 이 줄(DISCOVER + NEW + SOUNDS)이 flex-wrap 없이
+            한 줄로 강제되면서 페이지 전체 가로 스크롤의 원인이 됐다.
+            모바일에서만 줄바꿈 허용 + 가운데 정렬로 바꾼다(데스크톱은
+            flex-wrap 지정이 없던 기존 상태 그대로 nowrap 한 줄 유지). */}
+        <div
+          className="mb-[25px] max-md:flex-wrap max-md:justify-center"
+          style={{ display: "inline-flex", alignItems: "flex-end", gap: "0.7em" }}
+        >
           <span
-            className="font-medium font-noto text-discover-sub text-[38px] max-md:text-[24px] leading-[1.16] tracking-[0.48px]"
+            className="font-medium font-noto text-discover-sub max-md:text-white/85 text-[38px] max-md:text-[24px] leading-[1.16] tracking-[0.48px]"
             style={{ textShadow: TEXT_SHADOW_BASE }}
           >
             DISCOVER
@@ -217,7 +224,7 @@ export default function DiscoverSounds({
           </span>
 
           <span
-            className="font-medium font-noto text-discover-sub text-[38px] max-md:text-[24px] leading-[1.16] tracking-[0.48px]"
+            className="font-medium font-noto text-discover-sub max-md:text-white/85 text-[38px] max-md:text-[24px] leading-[1.16] tracking-[0.48px]"
             style={{ textShadow: TEXT_SHADOW_BASE }}
           >
             SOUNDS

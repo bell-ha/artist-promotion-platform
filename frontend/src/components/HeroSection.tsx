@@ -49,15 +49,18 @@ export default function HeroSection({
       {/* 콘텐츠 */}
       <div className="relative z-10 flex flex-col items-center justify-center h-full text-center px-8">
         <h1
-          className="m-0 text-hero-text font-bold font-noto text-[54px] max-md:text-[32px] tracking-[-1.36px] leading-[1.1]"
+          className="m-0 text-hero-text font-bold font-noto text-[54px] max-md:text-[32px] tracking-[-1.36px] leading-[1.1] max-md:max-w-full max-md:break-keep"
           style={{
             textShadow: "-1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000, 0 10px 30px rgba(0,0,0,.55)",
           }}
         >
           {title}
         </h1>
+        {/* 모바일: 바쁜 사진 위 회색 텍스트라 읽기 어렵다는 지적 —
+            데스크톱 색/투명도는 그대로 두고 모바일에서만 어두운 스크림을
+            깔고 불투명도를 올린다. */}
         <p
-          className="mt-[86px] max-md:mt-[32px] font-inter font-medium text-[15px] max-md:text-[13px] text-hero-sub opacity-[0.83] leading-[1.45] tracking-[0.38px]"
+          className="mt-[86px] max-md:mt-[32px] font-inter font-medium text-[15px] max-md:text-[13px] text-hero-sub opacity-[0.83] max-md:opacity-100 leading-[1.45] tracking-[0.38px] max-md:max-w-full max-md:bg-black/45 max-md:rounded-2xl max-md:px-4 max-md:py-3"
         >
           {subtitle.split("\n").map((line, i) => (
             <span key={i}>
