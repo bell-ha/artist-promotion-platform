@@ -291,8 +291,20 @@ async def update_active_template(
     current_user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ):
-    if data.template_number not in (1, 2, 3):
-        raise HTTPException(status_code=400, detail="템플릿 번호는 1, 2, 3 중 하나여야 합니다.")
+    # ⚠️ 실제로 등록된 템플릿만 받는다. 예전에는 (1, 2, 3)을 하드코딩해서
+    #    템플릿 3을 허용했는데, 3에 해당하는 모델·라우트가 없어서 이 값을
+    #    저장하는 순간 그 사용자의 공개 프로필이 404가 됐다
+    #    (get_public_profile_by_id → _template_or_404). 편집 화면에서
+    #    버튼 하나로 자기 페이지를 죽일 수 있었다.
+    #    화면에서 버튼을 막는 것만으로는 API 직접 호출을 막지 못하므로
+    #    여기서 레지스트리를 기준으로 검증한다. 템플릿이 늘어나면
+    #    services/portfolio.py의 TEMPLATES에 추가하는 것만으로 함께 열린다.
+    available = sorted(portfolio.TEMPLATES)
+    if data.template_number not in portfolio.TEMPLATES:
+        raise HTTPException(
+            status_code=400,
+            detail=f"사용할 수 없는 템플릿 번호입니다. 가능한 값: {', '.join(map(str, available))}",
+        )
     current_user.active_template = data.template_number
     session.add(current_user)
     await session.commit()

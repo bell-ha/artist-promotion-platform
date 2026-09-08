@@ -148,12 +148,12 @@ function CommonFields<T extends CommonCardFields>({ card, update }: { card: T; u
   const set = (key: keyof CommonCardFields) => (v: string) => update({ ...card, [key]: v });
   return (
     <>
-      <Input label="프로젝트 제목" value={card.project_title} onChange={set("project_title")} />
-      <Input label="Album Name" value={card.album_name} onChange={set("album_name")} />
-      <Input label="작곡가 / Arranger" value={card.composer} onChange={set("composer")} />
-      <Input label="카테고리 설명" value={card.category_desc} onChange={set("category_desc")} />
-      <Input label="제작년도" value={card.year} onChange={set("year")} />
-      <Textarea label="설명" value={card.description} onChange={set("description")} />
+      <Input label="프로젝트 제목" value={card.project_title ?? ""} onChange={set("project_title")} />
+      <Input label="Album Name" value={card.album_name ?? ""} onChange={set("album_name")} />
+      <Input label="작곡가 / Arranger" value={card.composer ?? ""} onChange={set("composer")} />
+      <Input label="카테고리 설명" value={card.category_desc ?? ""} onChange={set("category_desc")} />
+      <Input label="제작년도" value={card.year ?? ""} onChange={set("year")} />
+      <Textarea label="설명" value={card.description ?? ""} onChange={set("description")} />
     </>
   );
 }
@@ -272,7 +272,23 @@ export default function EditProfile() {
     }).catch(() => {});
   }, []); // eslint-disable-line
 
-  const notify = (text: string) => { setMsg(text); setTimeout(() => setMsg(""), 2500); };
+  // 성공 메시지는 잠깐 보이면 되지만, 실패 메시지는 왜 실패했는지 읽어야 하므로
+  // 자동으로 사라지지 않게 한다(닫기를 누르거나 다시 저장할 때까지 유지).
+  const notify = (text: string, persist = false) => {
+    setMsg(text);
+    if (!persist) setTimeout(() => setMsg(""), 2500);
+  };
+
+  // 서버가 보내는 detail을 그대로 보여준다.
+  // 예: "FREE 플랜은 앨범 카드를 최대 3개까지 등록할 수 있습니다. (현재 요청: 4개) ..."
+  // 예전에는 catch에서 이걸 버리고 "저장 실패" 다섯 글자만 띄웠다.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const errorText = (e: any): string => {
+    const detail = e?.response?.data?.detail;
+    if (typeof detail === "string" && detail.trim()) return detail;
+    if (e?.response?.status) return `저장 실패 (HTTP ${e.response.status})`;
+    return "저장에 실패했습니다. 네트워크 상태를 확인해 주세요.";
+  };
   const toInt = (v: string) => (v === "" ? null : parseInt(v));
 
   // ── 템플릿 전환 ────────────────────────────────
@@ -289,19 +305,21 @@ export default function EditProfile() {
     try {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const toNum = (cards: any[]) => cards.map(c => ({ ...c, year: toInt(c.year) }));
-      await Promise.all([
-        axios.put(`${BACKEND_URL}/profile/t1/name-section`, nameData, { headers }),
-        axios.put(`${BACKEND_URL}/profile/t1/album-section`, {
-          youtube_cards: toNum(albumData.youtube_cards),
-          soundcloud_cards: toNum(albumData.soundcloud_cards),
-          image_cards: toNum(albumData.image_cards),
-          no_image_cards: toNum(albumData.no_image_cards),
-        }, { headers }),
-        axios.put(`${BACKEND_URL}/profile/t1/text-sections`, { sections: textSections }, { headers }),
-        axios.put(`${BACKEND_URL}/profile/t1/contact-section`, contactData, { headers }),
-      ]);
+      // ⚠️ Promise.all이 아니라 순차 저장이다.
+      // 병렬로 보내면 앨범 저장만 403(플랜 한도)이어도 이름·텍스트·연락처는
+      // 이미 저장돼 버린다. 사용자는 "저장 실패"를 보고 다시 누르지만
+      // 일부는 이미 반영된 상태다. 첫 실패에서 멈추는 편이 낫다.
+      await axios.put(`${BACKEND_URL}/profile/t1/album-section`, {
+        youtube_cards: toNum(albumData.youtube_cards),
+        soundcloud_cards: toNum(albumData.soundcloud_cards),
+        image_cards: toNum(albumData.image_cards),
+        no_image_cards: toNum(albumData.no_image_cards),
+      }, { headers });
+      await axios.put(`${BACKEND_URL}/profile/t1/name-section`, nameData, { headers });
+      await axios.put(`${BACKEND_URL}/profile/t1/text-sections`, { sections: textSections }, { headers });
+      await axios.put(`${BACKEND_URL}/profile/t1/contact-section`, contactData, { headers });
       notify("저장 완료!");
-    } catch { notify("저장 실패"); }
+    } catch (e) { notify(errorText(e), true); }
     setSaving(false);
   };
 
@@ -311,20 +329,20 @@ export default function EditProfile() {
     try {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const toNum = (cards: any[]) => cards.map(c => ({ ...c, year: toInt(c.year) }));
-      await Promise.all([
-        axios.put(`${BACKEND_URL}/profile/t2/name-section`, t2NameData, { headers }),
-        axios.put(`${BACKEND_URL}/profile/t2/album-section`, {
-          youtube_cards: toNum(t2AlbumData.youtube_cards),
-          soundcloud_cards: toNum(t2AlbumData.soundcloud_cards),
-          image_cards: toNum(t2AlbumData.image_cards),
-          no_image_cards: toNum(t2AlbumData.no_image_cards),
-        }, { headers }),
-        axios.put(`${BACKEND_URL}/profile/t2/text-sections`, { sections: t2TextSections }, { headers }),
-        axios.put(`${BACKEND_URL}/profile/t2/contact-section`, t2ContactData, { headers }),
-        axios.put(`${BACKEND_URL}/profile/t2/image-sections`, { sections: t2ImageSections }, { headers }),
-      ]);
+      // T1과 같은 이유로 순차 저장. 한도에 걸리는 앨범을 먼저 보내
+      // 실패할 것이면 다른 섹션을 저장하기 전에 멈추게 한다.
+      await axios.put(`${BACKEND_URL}/profile/t2/album-section`, {
+        youtube_cards: toNum(t2AlbumData.youtube_cards),
+        soundcloud_cards: toNum(t2AlbumData.soundcloud_cards),
+        image_cards: toNum(t2AlbumData.image_cards),
+        no_image_cards: toNum(t2AlbumData.no_image_cards),
+      }, { headers });
+      await axios.put(`${BACKEND_URL}/profile/t2/name-section`, t2NameData, { headers });
+      await axios.put(`${BACKEND_URL}/profile/t2/text-sections`, { sections: t2TextSections }, { headers });
+      await axios.put(`${BACKEND_URL}/profile/t2/contact-section`, t2ContactData, { headers });
+      await axios.put(`${BACKEND_URL}/profile/t2/image-sections`, { sections: t2ImageSections }, { headers });
       notify("저장 완료!");
-    } catch { notify("저장 실패"); }
+    } catch (e) { notify(errorText(e), true); }
     setSaving(false);
   };
 
@@ -443,7 +461,11 @@ export default function EditProfile() {
         </div>
       </header>
 
-      {msg && <div style={s.toast}>{msg}</div>}
+      {msg && (
+        <div style={s.toast} onClick={() => setMsg("")} role="status" title="클릭하면 닫힙니다">
+          {msg}
+        </div>
+      )}
 
       <main style={s.main}>
         <h1 style={s.title}>Edit Profile</h1>
@@ -452,17 +474,34 @@ export default function EditProfile() {
         <div style={{ marginBottom: 36 }}>
           <div style={s.label}>템플릿 선택</div>
           <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
-            {([1, 2, 3] as (1 | 2 | 3)[]).map(n => (
-              <button key={n} onClick={() => switchTemplate(n)} style={{
-                padding: "6px 16px", borderRadius: 20, fontSize: 12, fontWeight: 700, letterSpacing: ".04em",
-                border: activeTemplate === n ? "1px solid #fff" : "1px solid rgba(255,255,255,.15)",
-                background: activeTemplate === n ? "#fff" : "transparent",
-                color: activeTemplate === n ? "#000" : "rgba(255,255,255,.4)",
-                cursor: "pointer",
-              }}>
-                Template {n}
-              </button>
-            ))}
+            {/* ⚠️ Template 3은 아직 없습니다.
+                예전에는 이 버튼이 눌렸고, 누르면 active_template=3이 저장되면서
+                그 사용자의 공개 프로필이 그대로 404가 됐습니다(템플릿 3에 해당하는
+                모델과 라우트가 없어서). 버튼을 지우지 않고 비활성화만 한 이유는
+                템플릿을 늘릴 자리가 구조에 이미 있기 때문입니다 —
+                services/portfolio.py의 TEMPLATES에 한 줄 추가하면 열립니다.
+                백엔드도 레지스트리를 기준으로 3을 거부하므로 화면과 API 양쪽이 막혀 있습니다. */}
+            {([1, 2, 3] as (1 | 2 | 3)[]).map(n => {
+              const ready = n !== 3;
+              return (
+                <button
+                  key={n}
+                  onClick={() => ready && switchTemplate(n)}
+                  disabled={!ready}
+                  title={ready ? undefined : "준비 중입니다"}
+                  style={{
+                    padding: "6px 16px", borderRadius: 20, fontSize: 12, fontWeight: 700, letterSpacing: ".04em",
+                    border: activeTemplate === n ? "1px solid #fff" : "1px solid rgba(255,255,255,.15)",
+                    background: activeTemplate === n ? "#fff" : "transparent",
+                    color: !ready ? "rgba(255,255,255,.2)"
+                      : activeTemplate === n ? "#000" : "rgba(255,255,255,.4)",
+                    cursor: ready ? "pointer" : "not-allowed",
+                  }}
+                >
+                  Template {n}{ready ? "" : " (준비 중)"}
+                </button>
+              );
+            })}
           </div>
         </div>
 
@@ -562,8 +601,8 @@ export default function EditProfile() {
                         <b style={{ color: "rgba(255,255,255,.8)", fontSize: 13 }}>Card #{ci + 1}</b>
                         <button style={s.btnDanger} onClick={() => removeTextCard(si, ci)}>카드 삭제</button>
                       </div>
-                      <Input label="제목" value={card.title} onChange={v => updateTextCard(si, ci, "title", v)} />
-                      <Textarea label="세부 사항" value={card.detail} onChange={v => updateTextCard(si, ci, "detail", v)} />
+                      <Input label="제목" value={card.title ?? ""} onChange={v => updateTextCard(si, ci, "title", v)} />
+                      <Textarea label="세부 사항" value={card.detail ?? ""} onChange={v => updateTextCard(si, ci, "detail", v)} />
                       {card.body_items.map((b, bi) => (
                         <div key={bi} style={{ background: "rgba(255,255,255,.05)", borderRadius: 8, padding: 10, marginBottom: 6 }}>
                           <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>
@@ -733,8 +772,8 @@ export default function EditProfile() {
                         <b style={{ color: "rgba(255,255,255,.8)", fontSize: 13 }}>Card #{ci + 1}</b>
                         <button style={s.btnDanger} onClick={() => t2RemoveTextCard(si, ci)}>카드 삭제</button>
                       </div>
-                      <Input label="제목" value={card.title} onChange={v => t2UpdateTextCard(si, ci, "title", v)} />
-                      <Textarea label="세부 사항" value={card.detail} onChange={v => t2UpdateTextCard(si, ci, "detail", v)} />
+                      <Input label="제목" value={card.title ?? ""} onChange={v => t2UpdateTextCard(si, ci, "title", v)} />
+                      <Textarea label="세부 사항" value={card.detail ?? ""} onChange={v => t2UpdateTextCard(si, ci, "detail", v)} />
                       {card.body_items.map((b, bi) => (
                         <div key={bi} style={{ background: "rgba(255,255,255,.05)", borderRadius: 8, padding: 10, marginBottom: 6 }}>
                           <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 6 }}>

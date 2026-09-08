@@ -16,6 +16,14 @@ interface PlanDef {
   highlighted?: boolean;
 }
 
+// ⚠️ 여기 적는 것은 **실제로 강제되는 것만** 둔다.
+// 예전에는 "포트폴리오 페이지 3개", "모든 템플릿", "방문자 통계",
+// "검색 결과 상단 노출", "커스텀 프로필 URL", "월별 상세 리포트" 같은
+// 항목이 있었는데 어느 것도 구현·강제되지 않았다. 게다가 카드 개수는
+// 실제와 **반대로** 적혀 있었다(FREE에 "최대 10개", STANDARD에 "무제한").
+// 지금 서버가 실제로 막는 것은 앨범 카드 개수 하나뿐이다 —
+// backend/app/api/payment.py 의 PLAN_ALBUM_CARD_LIMITS.
+// 결제 화면의 문구는 약속이므로, 만들지 않은 기능은 적지 않는다.
 const PLANS: PlanDef[] = [
   {
     id: "free",
@@ -24,10 +32,7 @@ const PLANS: PlanDef[] = [
     perMonth: "",
     desc: "시작하는 아티스트를 위한 기본 플랜",
     features: [
-      "포트폴리오 페이지 1개",
-      "카드 최대 10개",
-      "기본 템플릿 1종",
-      "기본 프로필 URL",
+      "앨범 카드 최대 3개",
     ],
   },
   {
@@ -37,11 +42,7 @@ const PLANS: PlanDef[] = [
     perMonth: "/ 월",
     desc: "활발히 활동하는 아티스트를 위한 플랜",
     features: [
-      "포트폴리오 페이지 3개",
-      "카드 무제한",
-      "모든 템플릿",
-      "방문자 통계",
-      "기본 프로필 URL",
+      "앨범 카드 최대 10개",
     ],
     highlighted: true,
   },
@@ -52,12 +53,7 @@ const PLANS: PlanDef[] = [
     perMonth: "/ 월",
     desc: "프로 아티스트를 위한 최상위 플랜",
     features: [
-      "Standard의 모든 기능",
-      "포트폴리오 페이지 무제한",
-      "검색 결과 상단 노출",
-      "커스텀 프로필 URL",
-      "월별 상세 리포트",
-      "1:1 이메일 지원",
+      "앨범 카드 무제한",
     ],
   },
 ];
@@ -82,7 +78,11 @@ export default function Upgrade() {
       })
       .then((res) => {
         const data = res.data as { plan: PlanId };
-        setCurrentPlan(data.plan);
+        // 백엔드는 enum value를 대문자로 돌려준다("FREE"). 화면의 PlanId는
+        // 소문자라 그대로 넣으면 plan.id === currentPlan 이 영원히 false가 되고,
+        // 현재 플랜이 "현재 플랜" 대신 "업그레이드"로 뜬다. 그걸 누르면
+        // POST /payment/subscribe {"plan":"free"} 가 나가 400이 난다.
+        setCurrentPlan(data.plan.toLowerCase() as PlanId);
       })
       .catch(() => {})
       .finally(() => setLoading(false));

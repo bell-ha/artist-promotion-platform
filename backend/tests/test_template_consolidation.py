@@ -109,3 +109,36 @@ async def test_없는_사용자는_404(client):
 async def test_비활성_사용자_프로필은_403(client, make_user):
     u, _ = await make_user(active=False)
     assert (await client.get(f"/profile/public/{u.id}")).status_code == 403
+
+
+# ── 템플릿 번호 검증 ────────────────────────────────────────────
+# 편집 화면의 "Template 3" 버튼을 누르면 active_template=3이 저장되고,
+# 그 순간 그 사용자의 공개 프로필이 404가 됐다. 화면에서 버튼을 막아도
+# API로는 뚫렸으므로 백엔드에서 막는다.
+
+@pytest.mark.parametrize("number", [1, 2])
+async def test_등록된_템플릿_번호는_받는다(client, make_user, number):
+    _, h = await make_user()
+    r = await client.put("/profile/active-template",
+                         json={"template_number": number}, headers=h)
+    assert r.status_code == 200
+    assert r.json()["active_template"] == number
+
+
+@pytest.mark.parametrize("number", [0, 3, 4, 99, -1])
+async def test_등록되지_않은_템플릿_번호는_400(client, make_user, number):
+    _, h = await make_user()
+    r = await client.put("/profile/active-template",
+                         json={"template_number": number}, headers=h)
+    assert r.status_code == 400, f"{number} → {r.status_code}"
+
+
+async def test_템플릿_3을_저장할_수_없으므로_공개_프로필이_죽지_않는다(client, make_user, career_item_id):
+    u, h = await make_user(template=1)
+    await client.put("/profile/t1/name-section",
+                     json=name_payload("살아있음", "Alive", [career_item_id]), headers=h)
+    assert (await client.get(f"/profile/public/{u.id}")).status_code == 200
+
+    await client.put("/profile/active-template", json={"template_number": 3}, headers=h)
+    # 거부됐으므로 공개 프로필은 그대로 살아 있어야 한다
+    assert (await client.get(f"/profile/public/{u.id}")).status_code == 200
