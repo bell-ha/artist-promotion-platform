@@ -27,8 +27,27 @@
 | **배포** | Docker Compose → Cloudtype · 2026.05까지 운영 후 중단 |
 
 <div align="center">
-<img src="frontend/src/assets/images/template1_thumbnail.png" width="520" alt="Template 1"/>
-<br><sub>템플릿 1 — 아티스트가 채우면 이런 페이지가 된다</sub>
+<img src="docs/images/01-main.png" width="820" alt="메인 페이지"/>
+<br><sub>메인 — 스포트라이트와 디스커버 카드는 관리자가 CMS에서 고른다</sub>
+</div>
+
+---
+
+## 템플릿을 왜 둘로 나눴나
+
+아티스트마다 보여줄 것이 다르다. 같은 틀에 넣으면 누군가는 항상 어색해진다.
+
+<div align="center">
+<table>
+<tr>
+<td width="50%"><img src="docs/images/02-template1.png" alt="템플릿 1"/></td>
+<td width="50%"><img src="docs/images/03-template2.png" alt="템플릿 2"/></td>
+</tr>
+<tr>
+<td align="center"><b>템플릿 1</b> — 세션 연주자<br><sub>참여 앨범과 음원 카드가 중심. 섭외를 받는 것이 목적이라 이력과 연락처가 위로 온다</sub></td>
+<td align="center"><b>템플릿 2</b> — 미디어아트 작가<br><sub>이미지 갤러리가 본체. 전시 도큐멘테이션을 여러 장 묶어 보여준다</sub></td>
+</tr>
+</table>
 </div>
 
 ---
