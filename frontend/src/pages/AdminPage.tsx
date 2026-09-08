@@ -121,7 +121,7 @@ export default function AdminPage() {
   return (
     <div style={{ display: "flex", minHeight: "100vh", background: "#0a0a0a", color: "#fff", fontFamily: "Inter, sans-serif" }}>
       {/* 사이드바 */}
-      <aside style={{ width: 200, borderRight: "1px solid rgba(255,255,255,0.08)", padding: "28px 0", flexShrink: 0, display: "flex", flexDirection: "column" }}>
+      <aside className="admin-side" style={{ borderRight: "1px solid rgba(255,255,255,0.08)", padding: "28px 0", display: "flex", flexDirection: "column" }}>
         <div style={{ padding: "0 20px 24px", borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
           <div style={{ fontSize: 11, color: "rgba(255,255,255,0.3)", letterSpacing: "0.1em", marginBottom: 4 }}>SEIHI</div>
           <div style={{ fontSize: 15, fontWeight: 700 }}>Admin</div>

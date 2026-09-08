@@ -106,7 +106,10 @@ export default function DiscoverSounds({
         el.style.marginLeft = `${-CARD_W / 2}px`;
         el.style.marginTop = `${-CARD_H / 2}px`;
         el.style.transform = `rotateY(${norm}deg) translateZ(${RADIUS}px) scale(${sizeScale})`;
-        el.style.opacity = String(Math.max(0, Math.pow(cos, 1.5)));
+        // cos가 음수면 Math.pow(cos, 1.5)가 NaN이 된다(음수의 실수 거듭제곱).
+        // 카드가 뒤쪽으로 돌아간 각도에서 실제로 음수가 나와 콘솔 경고가 떴다.
+        // 거듭제곱 전에 0으로 자른다.
+        el.style.opacity = String(Math.pow(Math.max(0, cos), 1.5));
         el.style.display = abs > 115 ? "none" : "block";
         el.style.zIndex = String(Math.round(cos * 100));
       });
