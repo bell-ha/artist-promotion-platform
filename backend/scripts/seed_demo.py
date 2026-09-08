@@ -83,6 +83,9 @@ from app.models.template2 import (  # noqa: E402
 )
 
 DEMO_DOMAIN = "@demo.example.com"
+
+# 데모 카드가 실제로 재생되도록 쓰는 공개 영상 (저장소 소유자가 지정)
+DEMO_YOUTUBE_URL = "https://youtu.be/yL_xb09iezc"
 DEMO_PASSWORD = "seihi1234!"
 
 # 데모 계정의 user_id를 고정합니다.
@@ -429,7 +432,11 @@ async def build_person(session, p, password_hash):
             return d
 
         for i, t in enumerate(p.get("youtube") or []):
-            session.add(m["yt"](**common(t, i, {"link": f'https://youtu.be/demo-{p["slug"]}-{i}'})))
+            # 데모용 유튜브 링크. 가짜 id를 쓰면 임베드가 "재생할 수 없음"으로
+            # 떠서 화면이 망가져 보이므로, 실제로 재생되는 공개 영상 하나를
+            # 모든 카드에 공통으로 쓴다. 데모 데이터라는 점은 계정 도메인
+            # (@demo.example.com)으로 드러난다.
+            session.add(m["yt"](**common(t, i, {"link": DEMO_YOUTUBE_URL})))
         for i, t in enumerate(p.get("soundcloud") or []):
             session.add(m["sc"](**common(t, i, {"link": f'https://soundcloud.com/demo/{p["slug"]}-{i}'})))
         for i, t in enumerate(p.get("image_cards") or []):
