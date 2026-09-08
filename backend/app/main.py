@@ -1,30 +1,20 @@
 import os
-from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from starlette.middleware.sessions import SessionMiddleware
 
-from app.database import init_db, seed_categories
 from app.api import auth
 from app.api import profile
 from app.api import payment
 from app.api import admin
 from app.api import main_page as main_page_api
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    # 서버 시작 시 테이블 생성 + 카테고리 초기 데이터 삽입
-    await init_db()
-    await seed_categories()
-    yield
-
+# 스키마 생성과 기준정보 시드는 Alembic 마이그레이션이 담당한다.
+# 부팅 때마다 운영 DB에 DDL을 실행하던 구조를 걷어냈다.
 app = FastAPI(
     title="Artist Promotion Platform API",
-    lifespan=lifespan
 )
 
 # ✅ 미들웨어 설정
-app.add_middleware(SessionMiddleware, secret_key=os.getenv("SESSION_SECRET", "dev-session-secret-change-in-production"))
 ALLOWED_ORIGINS = [
     "http://localhost:5173",
     "http://localhost:3000",

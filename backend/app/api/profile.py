@@ -24,6 +24,7 @@ from app.schemas.template1 import (
 )
 from app.schemas.template2 import T2NameSectionSave, T2ImageSectionsSave
 from app.core.deps import get_current_user
+from app.api.payment import check_album_card_limit
 from app.services import portfolio
 
 router = APIRouter(prefix="/profile", tags=["Profile"])
@@ -131,12 +132,38 @@ async def save_t2_name_section(
     return {"status": "ok"}
 
 
+def _enforce_album_card_limit(current_user: User, data: AlbumSectionSave) -> None:
+    """플랜별 앨범 카드 한도를 저장 **전에** 확인합니다.
+
+    유튜브 + 사운드클라우드 + 이미지 + 음원 4종 합계 기준입니다.
+    T2 이미지 섹션은 성격이 다른 기능이라 이 한도에서 제외합니다 —
+    한도 초과 메시지가 한 문장으로 설명되어야 하기 때문입니다.
+
+    한도를 넘으면 check_album_card_limit()이 403을 던지므로, 아래 저장
+    라우트는 호출만 하면 됩니다. t1·t2 두 라우트가 같은 헬퍼를 씁니다.
+
+    ⚠️ 위치에 대해: 정책 자체(PLAN_ALBUM_CARD_LIMITS)는 api/payment.py에
+       있습니다. services/portfolio.py 안에서 부르면 서비스가 api를
+       import하게 되어 계층이 거꾸로 뒤집히므로, 검사를 라우터에 두었습니다.
+       정책이 app/services/plans.py 같은 곳으로 옮겨지면 그때 검사도
+       save_album_section() 안으로 넣는 것이 맞습니다.
+    """
+    total = (
+        len(data.youtube_cards)
+        + len(data.soundcloud_cards)
+        + len(data.image_cards)
+        + len(data.no_image_cards)
+    )
+    check_album_card_limit(current_user, total)
+
+
 @router.put("/t1/album-section")
 async def save_album_section(
     data: AlbumSectionSave,
     current_user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ):
+    _enforce_album_card_limit(current_user, data)
     await portfolio.save_album_section(session, _template_or_404(1), current_user.id, data)
     return {"status": "ok"}
 
@@ -147,6 +174,7 @@ async def save_t2_album_section(
     current_user: User = Depends(get_current_user),
     session: AsyncSession = Depends(get_session),
 ):
+    _enforce_album_card_limit(current_user, data)
     await portfolio.save_album_section(session, _template_or_404(2), current_user.id, data)
     return {"status": "ok"}
 

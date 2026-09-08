@@ -1,5 +1,6 @@
 from typing import Optional, List
 from sqlmodel import SQLModel, Field, Relationship
+from sqlalchemy import Column, Integer, ForeignKey
 
 
 class CareerCategory(SQLModel, table=True):
@@ -19,6 +20,7 @@ class CareerItem(SQLModel, table=True):
     __tablename__ = "career_items"
 
     id: Optional[int] = Field(default=None, primary_key=True)
+    # CASCADE 아님 — 운영 DB의 DO $$ 조건(t1_/t2_ 또는 user_id→users)에 해당하지 않음
     category_id: int = Field(foreign_key="career_categories.id", nullable=False)
     name: str = Field(nullable=False)                # "보컬"
     order: int = Field(default=0)                    # 카테고리 내 순서
@@ -33,7 +35,15 @@ class UserJob(SQLModel, table=True):
     __tablename__ = "user_jobs"
 
     id: Optional[int] = Field(default=None, primary_key=True)
-    user_id: int = Field(foreign_key="users.id", nullable=False)
+    # users 삭제 시 함께 삭제 (운영 DB가 이미 CASCADE)
+    user_id: int = Field(
+        sa_column=Column(
+            Integer,
+            ForeignKey("users.id", ondelete="CASCADE"),
+            nullable=False,
+        )
+    )
+    # CASCADE 아님 — 위와 같은 이유
     career_item_id: int = Field(foreign_key="career_items.id", nullable=False)
 
     career_item: Optional[CareerItem] = Relationship(back_populates="user_jobs")

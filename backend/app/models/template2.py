@@ -1,5 +1,6 @@
 from typing import Optional, List
 from sqlmodel import SQLModel, Field, Relationship
+from sqlalchemy import Column, Integer, ForeignKey
 
 
 # ──────────────────────────────────────────────
@@ -11,7 +12,13 @@ class T2NameSection(SQLModel, table=True):
     __tablename__ = "t2_name_sections"
 
     id: Optional[int] = Field(default=None, primary_key=True)
-    user_id: int = Field(foreign_key="users.id", unique=True, nullable=False)
+    user_id: int = Field(
+        sa_column=Column(
+            Integer,
+            ForeignKey("users.id", ondelete="CASCADE"),
+            nullable=False, unique=True,
+        )
+    )
 
     thumbnail_url: Optional[str] = Field(default=None)
     name: Optional[str] = Field(default=None)
@@ -29,8 +36,20 @@ class T2NameSectionJob(SQLModel, table=True):
     __tablename__ = "t2_name_section_jobs"
 
     id: Optional[int] = Field(default=None, primary_key=True)
-    name_section_id: int = Field(foreign_key="t2_name_sections.id", nullable=False)
-    career_item_id: int = Field(foreign_key="career_items.id", nullable=False)
+    name_section_id: int = Field(
+        sa_column=Column(
+            Integer,
+            ForeignKey("t2_name_sections.id", ondelete="CASCADE"),
+            nullable=False,
+        )
+    )
+    career_item_id: int = Field(
+        sa_column=Column(
+            Integer,
+            ForeignKey("career_items.id", ondelete="CASCADE"),
+            nullable=False,
+        )
+    )
 
     name_section: Optional[T2NameSection] = Relationship(back_populates="jobs")
 
@@ -44,7 +63,13 @@ class T2AlbumSection(SQLModel, table=True):
     __tablename__ = "t2_album_sections"
 
     id: Optional[int] = Field(default=None, primary_key=True)
-    user_id: int = Field(foreign_key="users.id", unique=True, nullable=False)
+    user_id: int = Field(
+        sa_column=Column(
+            Integer,
+            ForeignKey("users.id", ondelete="CASCADE"),
+            nullable=False, unique=True,
+        )
+    )
 
     youtube_cards: List["T2YoutubeCard"] = Relationship(back_populates="album_section")
     soundcloud_cards: List["T2SoundcloudCard"] = Relationship(back_populates="album_section")
@@ -56,7 +81,13 @@ class T2YoutubeCard(SQLModel, table=True):
     __tablename__ = "t2_youtube_cards"
 
     id: Optional[int] = Field(default=None, primary_key=True)
-    album_section_id: int = Field(foreign_key="t2_album_sections.id", nullable=False)
+    album_section_id: int = Field(
+        sa_column=Column(
+            Integer,
+            ForeignKey("t2_album_sections.id", ondelete="CASCADE"),
+            nullable=False,
+        )
+    )
     order: int = Field(default=0)
 
     link: Optional[str] = Field(default=None)
@@ -75,7 +106,13 @@ class T2SoundcloudCard(SQLModel, table=True):
     __tablename__ = "t2_soundcloud_cards"
 
     id: Optional[int] = Field(default=None, primary_key=True)
-    album_section_id: int = Field(foreign_key="t2_album_sections.id", nullable=False)
+    album_section_id: int = Field(
+        sa_column=Column(
+            Integer,
+            ForeignKey("t2_album_sections.id", ondelete="CASCADE"),
+            nullable=False,
+        )
+    )
     order: int = Field(default=0)
 
     link: Optional[str] = Field(default=None)
@@ -94,7 +131,13 @@ class T2ImageCard(SQLModel, table=True):
     __tablename__ = "t2_image_cards"
 
     id: Optional[int] = Field(default=None, primary_key=True)
-    album_section_id: int = Field(foreign_key="t2_album_sections.id", nullable=False)
+    album_section_id: int = Field(
+        sa_column=Column(
+            Integer,
+            ForeignKey("t2_album_sections.id", ondelete="CASCADE"),
+            nullable=False,
+        )
+    )
     order: int = Field(default=0)
 
     hyperlink: Optional[str] = Field(default=None)
@@ -114,7 +157,13 @@ class T2NoImageCard(SQLModel, table=True):
     __tablename__ = "t2_no_image_cards"
 
     id: Optional[int] = Field(default=None, primary_key=True)
-    album_section_id: int = Field(foreign_key="t2_album_sections.id", nullable=False)
+    album_section_id: int = Field(
+        sa_column=Column(
+            Integer,
+            ForeignKey("t2_album_sections.id", ondelete="CASCADE"),
+            nullable=False,
+        )
+    )
     order: int = Field(default=0)
 
     mp3_url: Optional[str] = Field(default=None)
@@ -138,7 +187,13 @@ class T2ContactSection(SQLModel, table=True):
     __tablename__ = "t2_contact_sections"
 
     id: Optional[int] = Field(default=None, primary_key=True)
-    user_id: int = Field(foreign_key="users.id", unique=True, nullable=False)
+    user_id: int = Field(
+        sa_column=Column(
+            Integer,
+            ForeignKey("users.id", ondelete="CASCADE"),
+            nullable=False, unique=True,
+        )
+    )
 
     phone1: Optional[str] = Field(default=None)
     phone2: Optional[str] = Field(default=None)
@@ -163,7 +218,13 @@ class T2TextSection(SQLModel, table=True):
     __tablename__ = "t2_text_sections"
 
     id: Optional[int] = Field(default=None, primary_key=True)
-    user_id: int = Field(foreign_key="users.id", nullable=False)
+    user_id: int = Field(
+        sa_column=Column(
+            Integer,
+            ForeignKey("users.id", ondelete="CASCADE"),
+            nullable=False,
+        )
+    )
     order: int = Field(default=0)
 
     title: Optional[str] = Field(default=None)
@@ -176,7 +237,13 @@ class T2TextCard(SQLModel, table=True):
     __tablename__ = "t2_text_cards"
 
     id: Optional[int] = Field(default=None, primary_key=True)
-    text_section_id: int = Field(foreign_key="t2_text_sections.id", nullable=False)
+    text_section_id: int = Field(
+        sa_column=Column(
+            Integer,
+            ForeignKey("t2_text_sections.id", ondelete="CASCADE"),
+            nullable=False,
+        )
+    )
     order: int = Field(default=0)
 
     title: Optional[str] = Field(default=None)
@@ -190,7 +257,13 @@ class T2TextCardBodyItem(SQLModel, table=True):
     __tablename__ = "t2_text_card_body_items"
 
     id: Optional[int] = Field(default=None, primary_key=True)
-    text_card_id: int = Field(foreign_key="t2_text_cards.id", nullable=False)
+    text_card_id: int = Field(
+        sa_column=Column(
+            Integer,
+            ForeignKey("t2_text_cards.id", ondelete="CASCADE"),
+            nullable=False,
+        )
+    )
     order: int = Field(default=0)
 
     title: Optional[str] = Field(default=None)
@@ -208,7 +281,13 @@ class T2ImageSection(SQLModel, table=True):
     __tablename__ = "t2_image_sections"
 
     id: Optional[int] = Field(default=None, primary_key=True)
-    user_id: int = Field(foreign_key="users.id", nullable=False)
+    user_id: int = Field(
+        sa_column=Column(
+            Integer,
+            ForeignKey("users.id", ondelete="CASCADE"),
+            nullable=False,
+        )
+    )
     order: int = Field(default=0)
 
     title: Optional[str] = Field(default=None)
@@ -222,7 +301,13 @@ class T2ImageSectionImage(SQLModel, table=True):
     __tablename__ = "t2_image_section_images"
 
     id: Optional[int] = Field(default=None, primary_key=True)
-    image_section_id: int = Field(foreign_key="t2_image_sections.id", nullable=False)
+    image_section_id: int = Field(
+        sa_column=Column(
+            Integer,
+            ForeignKey("t2_image_sections.id", ondelete="CASCADE"),
+            nullable=False,
+        )
+    )
     order: int = Field(default=0)   # 0~3 (최대 4개)
 
     image_url: Optional[str] = Field(default=None)

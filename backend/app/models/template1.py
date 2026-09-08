@@ -1,5 +1,6 @@
 from typing import Optional, List
 from sqlmodel import SQLModel, Field, Relationship
+from sqlalchemy import Column, Integer, ForeignKey
 
 
 # ──────────────────────────────────────────────
@@ -11,7 +12,13 @@ class NameSection(SQLModel, table=True):
     __tablename__ = "t1_name_sections"
 
     id: Optional[int] = Field(default=None, primary_key=True)
-    user_id: int = Field(foreign_key="users.id", unique=True, nullable=False)
+    user_id: int = Field(
+        sa_column=Column(
+            Integer,
+            ForeignKey("users.id", ondelete="CASCADE"),
+            nullable=False, unique=True,
+        )
+    )
 
     thumbnail_url: Optional[str] = Field(default=None)
     name: Optional[str] = Field(default=None)           # 함태영
@@ -28,8 +35,20 @@ class NameSectionJob(SQLModel, table=True):
     __tablename__ = "t1_name_section_jobs"
 
     id: Optional[int] = Field(default=None, primary_key=True)
-    name_section_id: int = Field(foreign_key="t1_name_sections.id", nullable=False)
-    career_item_id: int = Field(foreign_key="career_items.id", nullable=False)
+    name_section_id: int = Field(
+        sa_column=Column(
+            Integer,
+            ForeignKey("t1_name_sections.id", ondelete="CASCADE"),
+            nullable=False,
+        )
+    )
+    career_item_id: int = Field(
+        sa_column=Column(
+            Integer,
+            ForeignKey("career_items.id", ondelete="CASCADE"),
+            nullable=False,
+        )
+    )
 
     name_section: Optional[NameSection] = Relationship(back_populates="jobs")
 
@@ -43,7 +62,13 @@ class AlbumSection(SQLModel, table=True):
     __tablename__ = "t1_album_sections"
 
     id: Optional[int] = Field(default=None, primary_key=True)
-    user_id: int = Field(foreign_key="users.id", unique=True, nullable=False)
+    user_id: int = Field(
+        sa_column=Column(
+            Integer,
+            ForeignKey("users.id", ondelete="CASCADE"),
+            nullable=False, unique=True,
+        )
+    )
 
     youtube_cards: List["YoutubeCard"] = Relationship(back_populates="album_section")
     soundcloud_cards: List["SoundcloudCard"] = Relationship(back_populates="album_section")
@@ -55,7 +80,13 @@ class YoutubeCard(SQLModel, table=True):
     __tablename__ = "t1_youtube_cards"
 
     id: Optional[int] = Field(default=None, primary_key=True)
-    album_section_id: int = Field(foreign_key="t1_album_sections.id", nullable=False)
+    album_section_id: int = Field(
+        sa_column=Column(
+            Integer,
+            ForeignKey("t1_album_sections.id", ondelete="CASCADE"),
+            nullable=False,
+        )
+    )
     order: int = Field(default=0)
 
     link: Optional[str] = Field(default=None)
@@ -74,7 +105,13 @@ class SoundcloudCard(SQLModel, table=True):
     __tablename__ = "t1_soundcloud_cards"
 
     id: Optional[int] = Field(default=None, primary_key=True)
-    album_section_id: int = Field(foreign_key="t1_album_sections.id", nullable=False)
+    album_section_id: int = Field(
+        sa_column=Column(
+            Integer,
+            ForeignKey("t1_album_sections.id", ondelete="CASCADE"),
+            nullable=False,
+        )
+    )
     order: int = Field(default=0)
 
     link: Optional[str] = Field(default=None)
@@ -93,7 +130,13 @@ class ImageCard(SQLModel, table=True):
     __tablename__ = "t1_image_cards"
 
     id: Optional[int] = Field(default=None, primary_key=True)
-    album_section_id: int = Field(foreign_key="t1_album_sections.id", nullable=False)
+    album_section_id: int = Field(
+        sa_column=Column(
+            Integer,
+            ForeignKey("t1_album_sections.id", ondelete="CASCADE"),
+            nullable=False,
+        )
+    )
     order: int = Field(default=0)
 
     hyperlink: Optional[str] = Field(default=None)
@@ -113,7 +156,13 @@ class NoImageCard(SQLModel, table=True):
     __tablename__ = "t1_no_image_cards"
 
     id: Optional[int] = Field(default=None, primary_key=True)
-    album_section_id: int = Field(foreign_key="t1_album_sections.id", nullable=False)
+    album_section_id: int = Field(
+        sa_column=Column(
+            Integer,
+            ForeignKey("t1_album_sections.id", ondelete="CASCADE"),
+            nullable=False,
+        )
+    )
     order: int = Field(default=0)
 
     mp3_url: Optional[str] = Field(default=None)
@@ -137,7 +186,13 @@ class ContactSection(SQLModel, table=True):
     __tablename__ = "t1_contact_sections"
 
     id: Optional[int] = Field(default=None, primary_key=True)
-    user_id: int = Field(foreign_key="users.id", unique=True, nullable=False)
+    user_id: int = Field(
+        sa_column=Column(
+            Integer,
+            ForeignKey("users.id", ondelete="CASCADE"),
+            nullable=False, unique=True,
+        )
+    )
 
     # 전화번호 (최대 2개, 선택)
     phone1: Optional[str] = Field(default=None)
@@ -166,7 +221,13 @@ class TextSection(SQLModel, table=True):
     __tablename__ = "t1_text_sections"
 
     id: Optional[int] = Field(default=None, primary_key=True)
-    user_id: int = Field(foreign_key="users.id", nullable=False)
+    user_id: int = Field(
+        sa_column=Column(
+            Integer,
+            ForeignKey("users.id", ondelete="CASCADE"),
+            nullable=False,
+        )
+    )
     order: int = Field(default=0)
 
     title: Optional[str] = Field(default=None)        # Collaboration · Clients
@@ -179,7 +240,13 @@ class TextCard(SQLModel, table=True):
     __tablename__ = "t1_text_cards"
 
     id: Optional[int] = Field(default=None, primary_key=True)
-    text_section_id: int = Field(foreign_key="t1_text_sections.id", nullable=False)
+    text_section_id: int = Field(
+        sa_column=Column(
+            Integer,
+            ForeignKey("t1_text_sections.id", ondelete="CASCADE"),
+            nullable=False,
+        )
+    )
     order: int = Field(default=0)
 
     title: Optional[str] = Field(default=None)        # ㈜배움 Baeum Co., Ltd.
@@ -193,7 +260,13 @@ class TextCardBodyItem(SQLModel, table=True):
     __tablename__ = "t1_text_card_body_items"
 
     id: Optional[int] = Field(default=None, primary_key=True)
-    text_card_id: int = Field(foreign_key="t1_text_cards.id", nullable=False)
+    text_card_id: int = Field(
+        sa_column=Column(
+            Integer,
+            ForeignKey("t1_text_cards.id", ondelete="CASCADE"),
+            nullable=False,
+        )
+    )
     order: int = Field(default=0)
 
     title: Optional[str] = Field(default=None)        # Project
