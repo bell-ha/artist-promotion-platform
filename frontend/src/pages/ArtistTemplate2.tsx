@@ -7,6 +7,7 @@ import type {
   Template2Data,
   T2AlbumCard,
   T2TextSection,
+  T2ImageSection,
   T2ContactSection,
 } from "../types/template2";
 import { dummyTemplate2 } from "../data/dummyTemplate2";
@@ -33,6 +34,12 @@ export default function ArtistTemplate2({ data = dummyTemplate2 }: { data?: Temp
   const navigate = useNavigate();
   const sortedCards = [...data.album_section.cards].sort((a, b) => a.order - b.order);
   const sortedTextSections = [...data.text_sections].sort((a, b) => a.order - b.order);
+  // 이미지 섹션은 템플릿 2에만 있는 영역이다. 편집 화면에서 저장은 되는데
+  // 공개 프로필이 렌더링하지 않아, 넣은 사람에게만 보이고 방문자에게는
+  // 없는 것과 같은 상태였다.
+  const sortedImageSections = [...(data.image_sections ?? [])].sort(
+    (a, b) => a.order - b.order,
+  );
   return (
     <div style={s.page}>
       <button style={s.backBtn} onClick={() => navigate(-1)}>←</button>
@@ -47,6 +54,10 @@ export default function ArtistTemplate2({ data = dummyTemplate2 }: { data?: Temp
 
       {sortedTextSections.map((sec, i) => (
         <TextSectionBlock key={i} section={sec} />
+      ))}
+
+      {sortedImageSections.map((sec, i) => (
+        <ImageSectionBlock key={i} section={sec} />
       ))}
 
       <ContactBlock contact={data.contact_section} />
@@ -229,6 +240,34 @@ function TextSectionBlock({ section }: { section: T2TextSection }) {
 }
 
 // ─────────────────────────────────────────────
+// ─────────────────────────────────────────────
+// ImageSectionBlock — 템플릿 2 전용 이미지 갤러리
+// ─────────────────────────────────────────────
+function ImageSectionBlock({ section }: { section: T2ImageSection }) {
+  const sortedImages = [...section.images].sort((a, b) => a.order - b.order);
+  if (sortedImages.length === 0) return null;
+
+  return (
+    <section style={s.textSection}>
+      <SectionLabel label={section.title ?? ""} />
+      {section.description && <p style={s.textSectionDesc}>{section.description}</p>}
+
+      <div style={s.imageGrid}>
+        {sortedImages.map((img, i) => (
+          <div key={i} style={s.imageGridItem}>
+            <img
+              src={img.image_url}
+              alt={section.title ? `${section.title} ${i + 1}` : `이미지 ${i + 1}`}
+              style={s.gearImg}
+              loading="lazy"
+            />
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
 // ─────────────────────────────────────────────
 // ContactBlock
 // ─────────────────────────────────────────────

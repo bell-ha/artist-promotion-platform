@@ -85,6 +85,13 @@ from app.models.template2 import (  # noqa: E402
 DEMO_DOMAIN = "@demo.example.com"
 DEMO_PASSWORD = "seihi1234!"
 
+# 데모 계정의 user_id를 고정합니다.
+# 자동 증가에 맡기면 스크립트를 돌릴 때마다 id가 바뀌어서 /artist/38 같은
+# URL이 매번 다른 사람을 가리킵니다. README 스크린샷이나 시연 링크를
+# 걸어두려면 id가 고정이어야 합니다.
+# 실제 가입은 이 대역 뒤에서 이어지도록 마지막에 시퀀스를 밀어줍니다.
+DEMO_ID_BASE = 9000
+
 
 def img(slug: str, size: int = 800) -> str:
     """Cloudinary 업로드 없이 쓰는 공개 플레이스홀더. seed가 같으면 항상 같은 그림."""
@@ -364,6 +371,7 @@ async def build_person(session, p, password_hash):
     m = T[p["tpl"]]
 
     user = User(
+        id=p["user_id"],
         email=f'{p["slug"]}{DEMO_DOMAIN}',
         nickname=p["nickname"],
         password=password_hash,
@@ -459,6 +467,10 @@ async def build_person(session, p, password_hash):
     return user
 
 
+for _i, _p in enumerate(PERSONAS, start=1):
+    _p["user_id"] = DEMO_ID_BASE + _i
+
+
 async def main():
     print(f"대상 DB: {_HOST}  (데모 전용)")
     password_hash = get_password_hash(DEMO_PASSWORD)   # 한 번만 해싱해서 재사용
@@ -487,6 +499,7 @@ async def main():
 
         # ── 관리자 ──
         session.add(User(
+            id=DEMO_ID_BASE + len(PERSONAS) + 1,
             email=f"admin{DEMO_DOMAIN}", nickname="관리자",
             password=password_hash, provider=LoginProvider.LOCAL,
             role=UserRole.ADMIN, is_active=True, active_template=1,
@@ -494,6 +507,12 @@ async def main():
         ))
         await session.commit()
         print("관리자 1명 생성")
+
+        # 명시 id로 넣었으므로 시퀀스를 끝으로 민다.
+        # 안 하면 이후 실제 회원가입이 id 중복으로 실패한다.
+        await session.execute(text(
+            "SELECT setval('users_id_seq', (SELECT MAX(id) FROM users))"))
+        await session.commit()
 
         # ── 메인 페이지 CMS ──
         content = (await session.execute(
@@ -535,6 +554,9 @@ async def main():
             c = (await session.execute(text(
                 "SELECT count(*) FROM users WHERE subscription_plan::text = :p"), {"p": plan})).scalar()
             print(f"  {plan:9s} {c}명")
+        print("\n고정 id (README/시연 링크용):")
+        for _p in PERSONAS:
+            print(f"  /artist/{_p['user_id']}  {_p['nickname']}  (템플릿 {_p['tpl']}, {_p['density']})")
         print(f"\n로그인: 아무 계정 / 비밀번호 {DEMO_PASSWORD}")
         print(f"관리자: admin{DEMO_DOMAIN}")
 
