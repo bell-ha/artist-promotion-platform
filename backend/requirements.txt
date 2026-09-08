@@ -25,3 +25,5 @@ fastapi-mail
 
 # DB 마이그레이션
 alembic>=1.13
+pytest>=9.1
+pytest-asyncio>=1.4
