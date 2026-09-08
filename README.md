@@ -8,9 +8,9 @@
 [![React](https://img.shields.io/badge/React_18-TypeScript-61DAFB?logo=react&logoColor=black)](https://react.dev/)
 [![PostgreSQL](https://img.shields.io/badge/NeonDB-Serverless_PostgreSQL-4169E1?logo=postgresql&logoColor=white)](https://neon.tech/)
 [![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white)](https://www.docker.com/)
-[![Service](https://img.shields.io/badge/서비스-seihi.co.kr-000000)](https://www.seihi.co.kr/)
+[![Status](https://img.shields.io/badge/운영-중단-lightgrey)]()
 
-2인 팀 · 2025.12 ~ 2026.05 · **실서비스 운영 중**
+2인 팀 · 2025.12 ~ 2026.05 · **운영 중단 (재개발 중)**
 
 </div>
 
@@ -24,7 +24,7 @@
 | **접근** | 템플릿을 고르고 칸을 채우면 포트폴리오 페이지가 되는 서비스 |
 | **까다로운 지점** | 아티스트마다 보여줄 것이 다르다 — 누구는 앨범, 누구는 세션 이력, 누구는 영상. **가변적인 콘텐츠 구조를 어떻게 저장할 것인가** |
 | **규모** | 백엔드 라우터 6개 · 테이블 20+ · 인증 경로 3개 · 프론트 React 18 + TS |
-| **배포** | Docker Compose → Cloudtype · [www.seihi.co.kr](https://www.seihi.co.kr/) |
+| **배포** | Docker Compose → Cloudtype · 2026.05까지 운영 후 중단 |
 
 <div align="center">
 <img src="frontend/src/assets/images/template1_thumbnail.png" width="520" alt="Template 1"/>
@@ -248,11 +248,26 @@ BACKEND_URL= / FRONTEND_URL=
 - 구독 플랜 API
 - Docker Compose 구성 및 Cloudtype 배포
 
-**진행 / 예정**
+**운영을 멈추고 정리한 것 (2026.09)**
+
+운영하던 중 구조적으로 위험한 지점들이 드러나 서비스를 내리고 정리했다.
+
+| 무엇이 문제였나 | 어떻게 고쳤나 |
+|---|---|
+| 서버가 뜰 때마다 운영 DB에 `ALTER TABLE`·FK 재생성·`DROP TYPE`이 실행됐다. 변경 이력도 롤백 수단도 없었다 | Alembic 도입. 마이그레이션이 실패하면 서버가 뜨지 않는다 |
+| 그 결과 모델 정의와 운영 스키마가 어긋나, **빈 DB에서는 기동조차 되지 않았다.** 하나뿐인 운영 DB만 우연히 동작하고 있었다 | 드리프트를 판정해 모델에 반영. 빈 DB에서 재현 확인 |
+| FK `ON DELETE CASCADE` 27개가 운영에만 있고 모델에는 없었다 | 모델에 명시. 없는 채로 새 환경을 만들면 사용자 삭제가 FK 위반으로 죽는다 |
+| 회원가입이 이메일 인증을 확인하지 않아 `signup`을 직접 호출하면 미인증 주소로 가입됐다 | 인증 상태를 확인하고 소비. 5회 오입력 폐기, 재발송 쿨다운 |
+| 구독 플랜이 아무 기능도 제한하지 않는 표시용 문자열이었다 | 앨범 카드 한도 연결 (FREE 3 / STANDARD 10 / PREMIUM 무제한) |
+| 공개 목록이 템플릿 1만 조회해, 템플릿 2만 작성한 사용자는 영영 노출되지 않았다 | 두 경로가 같은 함수를 쓰도록 통합 |
+| `profile.py` 898줄 중 약 600줄이 템플릿 1·2의 같은 코드였다 | 레지스트리로 통합. 271줄 + 서비스 531줄 |
+| bcrypt가 async 엔드포인트에서 직접 호출돼 이벤트 루프를 막았다 | `to_thread`로 분리 |
+
+**남은 것**
 - 아티스트 공개 포트폴리오 페이지 (비로그인 접근)
 - 장르별·직업별 아티스트 검색 — ③에서 정규화를 택한 이유가 여기서 쓰인다
-- JWT Private Route 보안 강화
-- 결제 게이트웨이 실연동
+- 결제 게이트웨이 실연동 (현재는 플랜 상태 관리와 권한 제한까지)
+- 모바일 레이아웃 — 고정 픽셀 폭이 남아 있어 좁은 화면에서 넘친다
 
 ---
 
@@ -281,6 +296,6 @@ BACKEND_URL= / FRONTEND_URL=
 
 <div align="center">
 
-**이종하** · [GitHub](https://github.com/bell-ha) · [Portfolio](https://bell-ha.github.io) · [서비스 바로가기](https://www.seihi.co.kr/)
+**이종하** · [GitHub](https://github.com/bell-ha) · [Portfolio](https://bell-ha.github.io)
 
 </div>
