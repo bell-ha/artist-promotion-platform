@@ -15,9 +15,14 @@ app = FastAPI(
 )
 
 # ✅ 미들웨어 설정
+# localhost와 127.0.0.1은 브라우저에게 서로 다른 오리진이다.
+# 개발 중 127.0.0.1로 접속하면 CORS에 막혀 API 응답을 못 읽는데,
+# 요청 자체는 200이라 원인을 찾기 어렵다. 둘 다 적어 둔다.
 ALLOWED_ORIGINS = [
     "http://localhost:5173",
+    "http://127.0.0.1:5173",
     "http://localhost:3000",
+    "http://127.0.0.1:3000",
     "https://www.seihi.co.kr",
     "https://seihi.co.kr",
 ]

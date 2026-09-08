@@ -220,9 +220,38 @@ docker compose up --build -d
 # Frontend  http://localhost:5173
 # Backend   http://localhost:8000
 # API Docs  http://localhost:8000/docs
+#
+# 백엔드를 다른 포트로 띄우려면 frontend/.env.local 에 VITE_API_URL 을 지정한다.
 ```
 
-서버 시작 시 `init_db()` + `seed_categories()`가 자동 실행되어 테이블 생성과 직업 카테고리 시드가 끝난다.
+스키마 생성과 직업 카테고리 시드는 **Alembic 마이그레이션**이 담당한다. 컨테이너는 `alembic upgrade head`를 먼저 돌리고, 실패하면 서버를 띄우지 않는다.
+
+```bash
+cd backend && alembic upgrade head    # 직접 실행할 때
+```
+
+### 둘러보기용 계정
+
+데모 데이터를 넣으면 아티스트 16명이 생긴다.
+
+```bash
+cd backend && ./.venv/bin/python -m scripts.seed_demo
+```
+
+비밀번호는 전부 `seihi1234!` 입니다.
+
+| 이메일 | 역할 | 무엇을 볼 수 있나 |
+|---|---|---|
+| `admin@demo.example.com` | 관리자 | 가입 통계, 회원 관리, 메인 페이지 CMS(스포트라이트·디스커버) |
+| `lee@demo.example.com` | 아티스트 · **템플릿 2** · PREMIUM | 이미지 섹션이 본체인 미디어아트 작가. 템플릿 2를 쓰는 이유 |
+| `kang@demo.example.com` | 아티스트 · 템플릿 1 · STANDARD | 카드 6개로 꽉 찬 세션 연주자 프로필 |
+| `yoon@demo.example.com` | 아티스트 · 템플릿 1 · **FREE** | 앨범 카드 3개로 한도가 꽉 찬 상태. 하나 더 추가하면 403 |
+| `cho@demo.example.com` | 아티스트 · 템플릿 2 · FREE | 이름과 직업만 있는 빈 프로필 |
+| `noh@demo.example.com` | 아티스트 · FREE | 가입만 하고 아무것도 안 쓴 상태 |
+
+밀도를 일부러 다르게 뒀다. 전부 채워진 프로필만 있으면 빈 상태 화면을 볼 수 없고, 플랜 한도가 실제로 걸리는 장면도 만들 수 없다.
+
+⚠️ 이 스크립트는 접속 호스트가 `localhost`/`127.0.0.1`일 때만 실행된다. 삭제 범위도 `@demo.example.com` 계정으로 한정한다.
 
 **환경변수** (`.env` — `.gitignore` 등록됨)
 ```env
