@@ -23,7 +23,7 @@
 | **문제** | 음악 아티스트는 자기 작업을 모아 보여줄 곳이 없다. 인스타는 흐르고, 사운드클라우드는 음원만, 웹사이트는 만들 줄 모른다 |
 | **접근** | 템플릿을 고르고 칸을 채우면 포트폴리오 페이지가 되는 서비스 |
 | **까다로운 지점** | 아티스트마다 보여줄 것이 다르다 — 누구는 앨범, 누구는 세션 이력, 누구는 영상. **가변적인 콘텐츠 구조를 어떻게 저장할 것인가** |
-| **규모** | 백엔드 라우터 6개 · 테이블 20+ · 인증 경로 3개 · 프론트 React 18 + TS |
+| **규모** | 백엔드 라우터 6개 · 테이블 20+ · 인증 경로 3개 · 프론트 React 19 + TS |
 | **배포** | Docker Compose → Cloudtype · 2026.05까지 운영 후 중단 |
 
 <div align="center">
@@ -80,7 +80,7 @@
 
 ```mermaid
 flowchart TB
-    subgraph FE["Frontend — React 18 + TypeScript"]
+    subgraph FE["Frontend — React 19 + TypeScript"]
         UI["Vite · Tailwind · React Router v6"]
     end
 
@@ -151,7 +151,7 @@ career_categories (7개 대분류)
             └── user_jobs  ─ 다대다 ─  users
 ```
 
-Performer / Player / Creator / Sound / Engineer / Developer / Visual 7개 카테고리를 서버 시작 시 `seed_categories()`로 자동 삽입한다. 직업이 추가돼도 **코드 배포 없이 DB 행만 추가**하면 되고, 나중에 "작곡가 찾기" 같은 필터를 붙일 때 조인 한 번으로 끝난다.
+PERFORMER / INSTRUMENTALIST / CREATOR / SOUND DESIGNER / AUDIO ENGINEER / AUDIO PROGRAMMER / VISUAL ARTIST 7개 카테고리는 Alembic 시드 리비전이 넣는다. 직업이 추가돼도 **코드 배포 없이 DB 행만 추가**하면 되고, 나중에 "작곡가 찾기" 같은 필터를 붙일 때 조인 한 번으로 끝난다.
 
 ### ④ 전면 async
 
@@ -161,7 +161,7 @@ FastAPI async + **asyncpg** 드라이버 + SQLModel(SQLAlchemy async) 조합으�
 
 ### ⑤ 이미지와 오디오를 한 엔드포인트로
 
-Cloudinary의 `resource_type="auto"`를 사용해 **업로드 엔드포인트를 하나로 유지**했다. 클라이언트는 파일 종류를 신경 쓰지 않고 `POST /profile/upload`에 보내면 URL을 받는다. 아티스트 포트폴리오 특성상 이미지와 음원이 섞여 들어오므로, 분기를 클라이언트에 두지 않는 편이 단순했다.
+서버가 `content_type`을 보고 `raw` · `video` · `image`로 분기해 **업로드 엔드포인트를 하나로 유지**했다. 클라이언트는 파일 종류를 신경 쓰지 않고 `POST /profile/upload`에 보내면 URL을 받는다. 아티스트 포트폴리오 특성상 이미지와 음원이 섞여 들어오므로, 분기를 클라이언트에 두지 않는 편이 단순했다.
 
 ---
 
@@ -254,7 +254,7 @@ cd backend && alembic upgrade head    # 직접 실행할 때
 데모 데이터를 넣으면 아티스트 16명이 생긴다.
 
 ```bash
-cd backend && ./.venv/bin/python -m scripts.seed_demo
+cd backend && ./.venv_test/bin/python -m scripts.seed_demo
 ```
 
 비밀번호는 전부 `seihi1234!` 입니다.
@@ -265,7 +265,7 @@ cd backend && ./.venv/bin/python -m scripts.seed_demo
 | `lee@demo.example.com` | 아티스트 · **템플릿 2** · PREMIUM | 이미지 섹션이 본체인 미디어아트 작가. 템플릿 2를 쓰는 이유 |
 | `kang@demo.example.com` | 아티스트 · 템플릿 1 · STANDARD | 카드 6개로 꽉 찬 세션 연주자 프로필 |
 | `yoon@demo.example.com` | 아티스트 · 템플릿 1 · **FREE** | 앨범 카드 3개로 한도가 꽉 찬 상태. 하나 더 추가하면 403 |
-| `cho@demo.example.com` | 아티스트 · 템플릿 2 · FREE | 이름과 직업만 있는 빈 프로필 |
+| `jo@demo.example.com` | 아티스트 · 템플릿 2 · FREE | 이름과 직업만 있는 빈 프로필 |
 | `noh@demo.example.com` | 아티스트 · FREE | 가입만 하고 아무것도 안 쓴 상태 |
 
 밀도를 일부러 다르게 뒀다. 전부 채워진 프로필만 있으면 빈 상태 화면을 볼 수 없고, 플랜 한도가 실제로 걸리는 장면도 만들 수 없다.
@@ -290,7 +290,7 @@ BACKEND_URL= / FRONTEND_URL=
 - 인증 3경로(Google OAuth · Email OTP · 로컬) → 단일 JWT
 - 템플릿 1·2 스키마 및 섹션별 편집 API
 - Cloudinary 파일 업로드 (이미지 · MP3)
-- 직업 카테고리 DB 구조 + 자동 시드
+- 직업 카테고리 DB 구조 + 마이그레이션 시드
 - 메인 페이지 CMS (스포트라이트 아티스트 관리)
 - 관리자 대시보드 (통계 · 유저 관리)
 - 구독 플랜 API
